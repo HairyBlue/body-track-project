@@ -8,13 +8,13 @@ class OrganPosition:
         self.image = image
 
 
-    def cv2Circle(self, color=(0, 0, 255), organ_postion=None):
+    def cv2_circle(self, color=(0, 0, 255), organ_postion=None):
         if organ_postion is not None:
             # image_height, image_width, _ = self.image.shape
             self.cv2.circle(self.image, (organ_postion[0], organ_postion[1]), 10, color, -1)
 
 
-    def landmarkList(self):
+    def landmark_list(self):
         return [(lm.x, lm.y, lm.z) for lm in self.landmarks.landmark]
     
     def is_valid_landmark(self, landmark):
@@ -23,7 +23,7 @@ class OrganPosition:
         return True
     
     def shoulder(self):
-        landmark_list = self.landmarkList()
+        landmark_list = self.landmark_list()
        
         left_shoulder = landmark_list[self.mp_pose.PoseLandmark.LEFT_SHOULDER.value]
         right_shoulder = landmark_list[self.mp_pose.PoseLandmark.RIGHT_SHOULDER.value]
@@ -36,25 +36,25 @@ class OrganPosition:
     
 
     def hips(self):
-        landmark_list = self.landmarkList()
+        landmark_list = self.landmark_list()
         left_hip = landmark_list[self.mp_pose.PoseLandmark.LEFT_HIP.value]
         right_hip = landmark_list[self.mp_pose.PoseLandmark.RIGHT_HIP.value]
 
         if not self.is_valid_landmark(left_hip) or not self.is_valid_landmark(right_hip):
-            # print("Shoulder hips are missing")
+            # print("Hips landmark are missing")
             return None
         return left_hip, right_hip
     
-    def centerShoulder(self):
+    def center_shoulder(self):
         left_shoulder, right_shoulder = self.shoulder()
 
         return ((left_shoulder[0] + right_shoulder[0]) / 2 , (left_shoulder[1] + right_shoulder[1]) / 2)
 
-    def zShoulder(self):
+    def z_shoulder(self):
         left_shoulder, right_shoulder = self.shoulder()
         return (left_shoulder[2] + right_shoulder[2]) / 2 
 
-    def centerHip(self):
+    def center_hip(self):
         left_hip, right_hip = self.hips()
         return ((left_hip[0] + right_hip[0]) / 2, (left_hip[1] + right_hip[1]) / 2)
 
@@ -63,22 +63,22 @@ class HeartPosition(OrganPosition):
     def __init__(self, landmarks, mp_pose, cv2, image):
         super().__init__(landmarks, mp_pose, cv2, image)
 
-    def getPosition(self):
+    def get_position(self):
         if  self.shoulder() is None or self.hips() is None:
             return None
         
         # must have image same for height and width
         image_height, image_width, _ = self.image.shape
-        center_shoulder = self.centerShoulder()
-        center_hip = self.centerHip()
+        center_shoulder = self.center_shoulder()
+        center_hip = self.center_hip()
 
         x = int(center_shoulder[0] * image_width)
         y = int((center_shoulder[1] + (center_hip[1] - center_shoulder[1]) * 0.2) * image_height)
-        z =  int(self.zShoulder() * image_width)
+        z =  int(self.z_shoulder() * image_width)
 
         # For cv2 circle cordinatates
         heart_position = (x, y, z)
-        self.cv2Circle(organ_postion=heart_position)
+        self.cv2_circle(organ_postion=heart_position)
 
         # # for Unity cordinates
         # x_unity_adjusted = (x + 3) / 100
@@ -97,16 +97,19 @@ class HeartPosition(OrganPosition):
         y_unity_adjusted = (y_unity * image_height / 100) - 1.6
         z_unity_adjusted = (((image_width + z) + 3) / 100) + 12
         position_dict = {'x': x_unity_adjusted, 'y': y_unity_adjusted, 'z': z_unity_adjusted}
+        
         return position_dict
 
 
-def calculateOrganPosition(organ_type, landmarks, mp_pose, cv2, image):
+def calculate_organ_position(organ_type, landmarks, mp_pose, cv2, image):
     if organ_type == 'heart':
-        organ = HeartPosition(landmarks=landmarks, mp_pose=mp_pose, cv2=cv2, image=image)
-        if organ.getPosition() is None:
-            print("Need Proper Position, this will send back to the client if possible")
-        return organ.getPosition()
-
+        try:
+            organ = HeartPosition(landmarks=landmarks, mp_pose=mp_pose, cv2=cv2, image=image)
+            if organ.get_position() is None:
+                print("Need Proper Position, this will send back to the client if possible")
+            return organ.get_position()
+        except Exception as e:
+            print(e)
 
 
 
