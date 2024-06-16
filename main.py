@@ -42,7 +42,7 @@ def process_frame(frame):
 
 def adjust_orientation(frame):
     # Check if the image is in portrait mode
-    if frame.shape[0] > frame.shape[1]:
+    if frame.shape[1] > frame.shape[0]:
         frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
     return frame
     # return cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
