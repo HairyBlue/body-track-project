@@ -6,8 +6,8 @@ import asyncio
 
 from positions import calculate_organ_position
 
-isUnity = True
-organType = 'brain'
+isUnity = False
+organType = 'intestine'
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
