@@ -4,10 +4,14 @@ import mediapipe as mp
 import json
 import asyncio
 
-from positions import calculate_organ_position
+from BodyLandmarkPosition import calculate_organ_position
+from GestureCommand import get_gesture_command
+
+# for command
+trackable = False
 
 isUnity = False
-organType = 'intestine'
+organType = 'heart'
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
@@ -129,7 +133,6 @@ def debug_feed():
         image.flags.writeable = False
         results = pose.process(image)
         landmarks = results.pose_landmarks
-        
 
         if results.pose_landmarks:
             image.flags.writeable = True
@@ -141,6 +144,42 @@ def debug_feed():
       
             cv2.imshow("Mediapipe feed", image)
             cv2.waitKey(1)
+ 
+    cap.release()
+    cv2.destroyAllWindows()  
+
+
+
+def command():
+    cap = cv2.VideoCapture(0)
+    while cap.isOpened():
+        ret, frame = cap.read()
+        image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        image.flags.writeable = False
+        results = pose.process(image)
+        landmarks = results.pose_landmarks
+
+        if results.pose_landmarks:
+            global trackable
+
+            image.flags.writeable = True
+            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+            mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+
+            isTracked, switchOrgan =  get_gesture_command(landmarks, mp_pose, cv2,image, trackable)
+            
+            if isTracked is not None and not trackable:
+                trackable = isTracked
+
+            if isTracked is not None and trackable:
+                trackable = isTracked
+                cv2.destroyAllWindows()
+
+            if trackable:
+                if landmarks:
+                    
+                    cv2.imshow("Mediapipe feed", image)
+                    cv2.waitKey(1)
  
     cap.release()
     cv2.destroyAllWindows()  

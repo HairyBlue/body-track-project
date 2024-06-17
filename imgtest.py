@@ -1,6 +1,6 @@
 import cv2
 import mediapipe as mp
-from positions import OrganPosition
+from BodyLandmarkPosition import OrganPosition
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
