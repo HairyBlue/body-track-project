@@ -74,7 +74,7 @@ class HeartPosition(BodyLandmarkPosition):
         pair_hip = self.landmark_pair('LEFT_HIP', 'RIGHT_HIP')
 
         if pair_shoulder is None or pair_hip is None:
-            return None 
+            return None, None
 
         center_shoulder = self.center(pair_shoulder)
         center_hip = self.center(pair_hip)
@@ -109,7 +109,7 @@ class LiverPosition(BodyLandmarkPosition):
         pair_hip = self.landmark_pair('LEFT_HIP', 'RIGHT_HIP')
 
         if pair_shoulder is None or pair_hip is None:
-            return None 
+            return None, None
 
         center_shoulder = self.center(pair_shoulder)
         center_hip = self.center(pair_hip)
@@ -153,49 +153,62 @@ class IntestinePosition(BodyLandmarkPosition):
         command_position = self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=0, y_offset=-100)
         unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=0, y_offset=-2.8, z_offset=15)
         return command_position, unity_position
+    
 
-def calculate_organ_position(organ_type, landmarks, mp_pose, cv2, image):
+
+
+def calculate_position(organ_type, landmarks, mp_pose, cv2, image):
     if organ_type == 'heart':
         try:
             organ = HeartPosition(landmarks=landmarks, mp_pose=mp_pose, cv2=cv2, image=image)
-            if organ.get_position() is None:
+            command_position, unity_position = organ.get_position()
+
+            if unity_position is None:
                 print("Need Proper Position, this will send back to the client if possible")
-            return organ.get_position()
+            return unity_position
         except Exception as e:
             print(e)
 
     if organ_type == 'brain':
         try:
             organ = BrainPosition(landmarks=landmarks, mp_pose=mp_pose, cv2=cv2, image=image)
-            if organ.get_position() is None:
+            command_position, unity_position = organ.get_position()
+
+            if unity_position is None:
                 print("Need Proper Position, this will send back to the client if possible")
-            return organ.get_position()
+            return unity_position
         except Exception as e:
             print(e)
 
     if organ_type == 'liver':
         try:
             organ = LiverPosition(landmarks=landmarks, mp_pose=mp_pose, cv2=cv2, image=image)
-            if organ.get_position() is None:
+            command_position, unity_position = organ.get_position()
+
+            if unity_position is None:
                 print("Need Proper Position, this will send back to the client if possible")
-            return organ.get_position()
+            return unity_position
         except Exception as e:
             print(e)
 
     if organ_type == 'stomach':
         try:
             organ = StomachPosition(landmarks=landmarks, mp_pose=mp_pose, cv2=cv2, image=image)
-            if organ.get_position() is None:
+            command_position, unity_position = organ.get_position()
+
+            if unity_position is None:
                 print("Need Proper Position, this will send back to the client if possible")
-            return organ.get_position()
+            return unity_position
         except Exception as e:
             print(e)
     if organ_type == 'intestine':
         try:
             organ = IntestinePosition(landmarks=landmarks, mp_pose=mp_pose, cv2=cv2, image=image)
-            if organ.get_position() is None:
+            command_position, unity_position = organ.get_position()
+
+            if unity_position is None:
                 print("Need Proper Position, this will send back to the client if possible")
-            return organ.get_position()
+            return unity_position
         except Exception as e:
             print(e)
 

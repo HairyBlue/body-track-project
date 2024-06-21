@@ -4,14 +4,14 @@ import mediapipe as mp
 import json
 import asyncio
 
-from BodyLandmarkPosition import calculate_organ_position
+from BodyLandmarkPosition import calculate_position
 from GestureCommand import get_gesture_command
 
 # for command
 trackable = False
-
-isUnity = False
-organType = 'heart'
+isUnity = True
+isDebug = False
+isCommand = False
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
@@ -24,7 +24,54 @@ pose = mp_pose.Pose(static_image_mode=False,
                     min_detection_confidence=0.5,
                     min_tracking_confidence=0.5)
 
-def process_frame(frame):
+currentUser = ""
+typeSelected = ""
+
+user_queue = ['huy']
+unique_users = set()
+unique_users.add('huy')
+supported = [
+        'heart',
+        'brain',
+        'liver',
+        'stomach',
+        'intestine',
+]
+
+def dequeue_user():
+    if user_queue:
+        user = user_queue.pop(0)
+        unique_users.remove(user)
+        print(f"User '{user}' removed from the queue. Queue: {user_queue}")
+        return user
+    print("Queue is empty.")
+    return None
+
+
+def register_user(user, msg):
+    global currentUser
+    global typeSelected
+    try:
+        if user and user not in unique_users:
+            user_queue.append(user)
+            unique_users.add(user)
+        
+        if user == user_queue[0]:
+            currentUser = user  
+            typeSelected = msg
+            print(user_queue)
+    except Exception as e:
+        print("Error in registering user")
+
+def adjust_orientation(frame):
+    # Check if the image is in portrait mode
+    if frame.shape[1] > frame.shape[0]:
+        frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+    return frame
+    # return cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+
+
+def process_frame(frame, trackType):
     image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     image.flags.writeable = False
     results = pose.process(image)
@@ -35,10 +82,9 @@ def process_frame(frame):
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
 
-        orgPosition = calculate_organ_position(organType, landmarks, mp_pose,cv2,image)
+        calcPosition = calculate_position(trackType, landmarks, mp_pose,cv2,image)
 
-        return orgPosition, image
-    
+        return calcPosition, image
     return None, None
 
 
@@ -50,22 +96,40 @@ def adjust_orientation(frame):
     # return cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
 
 
+async def receive_json(reader):
+
+    try:
+        length_prefix = await reader.readexactly(4)
+        if not length_prefix:
+            return None, None
+            
+        json_length = int.from_bytes(length_prefix, byteorder='little')
+        json_data = await reader.readexactly(json_length)
+        json_str = json_data.decode('utf-8')
+       
+        json_msg = json.loads(json_str)
+        data_type = 'json'
+        return data_type, json_msg  
+    except asyncio.IncompleteReadError:
+        return None, None
+
+
 async def receive_frame(reader):
     try:
         length_prefix = await reader.readexactly(4)
         if not length_prefix:
-            return None
+            return None, None
             
         frame_length = int.from_bytes(length_prefix, byteorder='little')
         frame_data = await reader.readexactly(frame_length)
-            
+
         frame_array = np.frombuffer(frame_data, dtype=np.uint8)
         frame = cv2.imdecode(frame_array, cv2.IMREAD_COLOR)
-            
         return frame
     
     except asyncio.IncompleteReadError:
-        return None
+        return None, None
+
 
 async def send_position(writer, position):
     try:
@@ -77,29 +141,54 @@ async def send_position(writer, position):
     except Exception as e:
         print(f"Error sending position: {e}")
 
+async def send_queue_msg(writer, connectedUser):
+    try:
+        queueNum =  user_queue.index(connectedUser) + 1
+        message = f"There is still user using the body tracking. Your queue number is {queueNum} from {len(user_queue)} number of user/s. Please wait on your turn..."
+        queueMsq = {'queue': message}
+        print(queueMsq)
+        data = json.dumps(queueMsq).encode('utf-8')
+        length_prefix = len(data).to_bytes(4, byteorder='little')
+
+        writer.write(length_prefix + data)
+        await writer.drain()
+
+    except Exception as e:
+        print(f"Error sending queue message: {e}")
+
 
 async def handle_client(reader, writer):
+    global isTrackable
     addr = writer.get_extra_info('peername')
     loop = asyncio.get_running_loop()
-
     try:
         while True:
+            json_type, jsonMsg = await receive_json(reader)
             frame = await receive_frame(reader)
+            connectedUser = ""
+            if jsonMsg and json_type == 'json':
+                connectedUser = jsonMsg.get('uuid', '')
+                msg_text = jsonMsg.get('message', '')
+                register_user(connectedUser, msg_text)
+                
             if frame is None:
                 break
-
-            # frame = adjust_orientation(frame=frame)
-            orgPosition, image = await loop.run_in_executor(None, process_frame, frame)
             
-            if orgPosition is not None:               
-                await send_position(writer, position=orgPosition)
+            if currentUser == user_queue[0]:
+                print(typeSelected)
+                position, image = await loop.run_in_executor(None, process_frame, frame, typeSelected.lower())
 
-            if image is None:
-                cv2.imshow(addr[0], image)
-                cv2.waitKey(1)
+                if position is not None:               
+                     await send_position(writer, position=position)
+                if image is not None:
+                    cv2.imshow(addr[0], image)
+                    cv2.waitKey(1)
+            else:
+                if len(connectedUser) > 0:
+                    await send_queue_msg(writer, connectedUser)
+
 
             await asyncio.sleep(0.012)
-
     except Exception as e:
         print(f"Exception in client thread: {e}")
         cv2.destroyWindow(addr[0])
@@ -107,7 +196,7 @@ async def handle_client(reader, writer):
         writer.close()
         await writer.wait_closed()
         print(f"Connection to {addr} closed.")
-
+        dequeue_user()
 
 async def cb(reader, writer):
     addr = writer.get_extra_info('peername')
@@ -140,14 +229,13 @@ def debug_feed():
             mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
 
             if landmarks:
-                calculate_organ_position(organType, landmarks, mp_pose,cv2,image)
-      
+                calculate_position("heart", landmarks, mp_pose,cv2,image)
+            
             cv2.imshow("Mediapipe feed", image)
             cv2.waitKey(1)
  
     cap.release()
     cv2.destroyAllWindows()  
-
 
 
 def command():
@@ -187,8 +275,33 @@ def command():
 def main():
     if isUnity:
         asyncio.run(unity_stream())
-    else:
+    if isDebug:
         debug_feed()
+    if isCommand:
+        command()
 
 if __name__ == '__main__':
     main()
+
+
+
+
+
+                # if isTrackable:
+                
+                #     #  topic the message recieve organ or system
+                #     # logger start time for frame ms recieve
+                #     frame = await receive_frame(reader)
+                #     if frame is None:
+                #         break
+                #     # logger end time for frame ms receive and log it
+
+                #     # frame = adjust_orientation(frame=frame)
+                #     # logger start time for frame ms recieve
+                #     position, image = await loop.run_in_executor(None, process_frame, frame, "heart")
+
+                #     if position is not None:               
+                #         await send_position(writer, position=position)
+                #     if image is None:
+                #         cv2.imshow(addr[0], image)
+                #         cv2.waitKey(1)
