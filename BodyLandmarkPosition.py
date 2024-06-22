@@ -1,3 +1,4 @@
+import math
 class BodyLandmarkPosition:
     def __init__(self, landmarks, mp_pose, cv2, image):
         self.landmarks = landmarks
@@ -55,9 +56,9 @@ class BodyLandmarkPosition:
         x_unity = (normalized_x - 0.5) * 2
         y_unity = (normalized_y - 0.5) * 2
 
-        x_unity_adjusted = (x_unity * image_width / 100) + x_offset
-        y_unity_adjusted = (y_unity * image_height / 100) + y_offset
-        z_unity_adjusted = (((image_width * center[2]) + 3) / 300) + z_offset
+        x_unity_adjusted = round((x_unity * image_width / 100) + x_offset, 4)
+        y_unity_adjusted = round((y_unity * image_height / 100) + y_offset, 4)
+        z_unity_adjusted = math.floor((((image_width * center[2]) + 3) / 300) + z_offset)
     
 
         position_dict = { 'x': x_unity_adjusted, 'y': y_unity_adjusted, 'z': z_unity_adjusted }
@@ -80,7 +81,7 @@ class HeartPosition(BodyLandmarkPosition):
         center_hip = self.center(pair_hip)
 
         command_position =  self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=0, y_offset=-200)
-        unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=0, y_offset=-1.4, z_offset=15)
+        unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=0, y_offset=-1.5, z_offset=15)
         return command_position, unity_position
 
 class BrainPosition(BodyLandmarkPosition):
@@ -97,7 +98,7 @@ class BrainPosition(BodyLandmarkPosition):
         center_ear = self.center(pair_ear)
 
         command_position = self.calculate_organ_position(center1=center_ear, center2=nose, x_offset=0, y_offset=- 50)
-        unity_position = self.calculate_unity_coordinates(center=center_ear, x_offset=0, y_offset=+ 1.2, z_offset=15)
+        unity_position = self.calculate_unity_coordinates(center=center_ear, x_offset=0, y_offset=+ 1.2, z_offset=4)
         return command_position, unity_position
 
 class LiverPosition(BodyLandmarkPosition):
@@ -115,7 +116,7 @@ class LiverPosition(BodyLandmarkPosition):
         center_hip = self.center(pair_hip)
 
         command_position = self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=-35, y_offset=-150)
-        unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=-0.8, y_offset=-2, z_offset=15)
+        unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=-0.8, y_offset=-2, z_offset=4)
         return command_position, unity_position
     
 class StomachPosition(BodyLandmarkPosition):
@@ -133,7 +134,7 @@ class StomachPosition(BodyLandmarkPosition):
         center_hip = self.center(pair_hip)
 
         command_position = self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=30, y_offset=-145)
-        unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=0.85, y_offset=-2.5, z_offset=15)
+        unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=0.85, y_offset=-2.5, z_offset=4)
         return command_position, unity_position
 
 class IntestinePosition(BodyLandmarkPosition):
@@ -151,7 +152,7 @@ class IntestinePosition(BodyLandmarkPosition):
         center_hip = self.center(pair_hip)
 
         command_position = self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=0, y_offset=-100)
-        unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=0, y_offset=-2.8, z_offset=15)
+        unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=0, y_offset=-2.8, z_offset=4)
         return command_position, unity_position
     
 
