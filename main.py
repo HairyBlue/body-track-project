@@ -27,9 +27,9 @@ pose = mp_pose.Pose(static_image_mode=False,
 currentUser = ""
 typeSelected = ""
 
-user_queue = ['huy']
+user_queue = []
 unique_users = set()
-unique_users.add('huy')
+
 supported = [
         'heart',
         'brain',
@@ -37,6 +37,19 @@ supported = [
         'stomach',
         'intestine',
 ]
+
+
+
+
+def pop_user(connectedUser):
+    if user_queue:
+        idx = user_queue.index(connectedUser)
+        user = user_queue.pop(idx)
+        unique_users.remove(user)
+        print(f"User '{user}' removed from unforseen situation. Queue: {user_queue}")
+        return user
+    print("Queue is empty.")
+    return None
 
 def dequeue_user():
     if user_queue:
@@ -56,10 +69,11 @@ def register_user(user, msg):
             user_queue.append(user)
             unique_users.add(user)
         
-        if user == user_queue[0]:
+        if user_queue.index(user) == 0:
             currentUser = user  
             typeSelected = msg
-            print(user_queue)
+            print(currentUser)
+
     except Exception as e:
         print("Error in registering user")
 
@@ -87,22 +101,13 @@ def process_frame(frame, trackType):
         return calcPosition, image
     return None, None
 
-
-def adjust_orientation(frame):
-    # Check if the image is in portrait mode
-    if frame.shape[1] > frame.shape[0]:
-        frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
-    return frame
-    # return cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
-
-
 async def receive_json(reader):
 
     try:
         length_prefix = await reader.readexactly(4)
         if not length_prefix:
             return None, None
-            
+
         json_length = int.from_bytes(length_prefix, byteorder='little')
         json_data = await reader.readexactly(json_length)
         json_str = json_data.decode('utf-8')
@@ -117,8 +122,6 @@ async def receive_json(reader):
 async def receive_frame(reader):
     try:
         length_prefix = await reader.readexactly(4)
-        if not length_prefix:
-            return None, None
             
         frame_length = int.from_bytes(length_prefix, byteorder='little')
         frame_data = await reader.readexactly(frame_length)
@@ -145,7 +148,7 @@ async def send_queue_msg(writer, connectedUser):
     try:
         queueNum =  user_queue.index(connectedUser) + 1
         message = f"There is still user using the body tracking. Your queue number is {queueNum} from {len(user_queue)} number of user/s. Please wait on your turn..."
-        queueMsq = {'queue': message}
+        queueMsq = {'uuid': connectedUser, 'queue': message}
         print(queueMsq)
         data = json.dumps(queueMsq).encode('utf-8')
         length_prefix = len(data).to_bytes(4, byteorder='little')
@@ -161,11 +164,14 @@ async def handle_client(reader, writer):
     global isTrackable
     addr = writer.get_extra_info('peername')
     loop = asyncio.get_running_loop()
+    connectedUser = ""
+
     try:
         while True:
             json_type, jsonMsg = await receive_json(reader)
             frame = await receive_frame(reader)
-            connectedUser = ""
+
+            
             if jsonMsg and json_type == 'json':
                 connectedUser = jsonMsg.get('uuid', '')
                 msg_text = jsonMsg.get('message', '')
@@ -173,9 +179,8 @@ async def handle_client(reader, writer):
                 
             if frame is None:
                 break
-            
+
             if currentUser == user_queue[0]:
-                print(typeSelected)
                 position, image = await loop.run_in_executor(None, process_frame, frame, typeSelected.lower())
 
                 if position is not None:               
@@ -196,7 +201,11 @@ async def handle_client(reader, writer):
         writer.close()
         await writer.wait_closed()
         print(f"Connection to {addr} closed.")
-        dequeue_user()
+        # dequeue current user
+        if currentUser == user_queue[0]:
+            dequeue_user()
+        # if other user quit or any error happen pop them, dont remove the current user
+        pop_user(connectedUser)
 
 async def cb(reader, writer):
     addr = writer.get_extra_info('peername')
@@ -210,6 +219,9 @@ async def unity_stream():
 
     server = await asyncio.start_server(cb, host, port)
     print(f'Server listening on {host}:{port}')
+
+    # user_queue.append('huy')
+    # unique_users.add('huy')
 
     async with server:
         await server.serve_forever()
