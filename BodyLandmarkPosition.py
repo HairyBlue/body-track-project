@@ -214,7 +214,9 @@ def calculate_position(organ_type, landmarks, mp_pose, cv2, image):
             print(e)
 
 
-def all_organ_position(landmarks, mp_pose, cv2, image):
+
+
+def calculate_position_v2(landmarks, mp_pose, cv2, image):
         try:
             heart = HeartPosition(landmarks=landmarks, mp_pose=mp_pose, cv2=cv2, image=image)
             brain = BrainPosition(landmarks=landmarks, mp_pose=mp_pose, cv2=cv2, image=image)

@@ -4,17 +4,18 @@ import mediapipe as mp
 import json
 import asyncio
 
-from BodyLandmarkPosition import calculate_position
+from BodyLandmarkPosition import calculate_position, calculate_position_v2
 from GestureCommand import get_gesture_command
-
+from HandLandmarkPostion import hand_position
 # for command
 trackable = False
-isUnity = True
-isDebug = False
+isUnity = False
+isDebug = True
 isCommand = False
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
+
 mp_pose = mp.solutions.pose
 pose = mp_pose.Pose(static_image_mode=False,
                     model_complexity=1,
@@ -23,6 +24,12 @@ pose = mp_pose.Pose(static_image_mode=False,
                     smooth_segmentation=True,
                     min_detection_confidence=0.5,
                     min_tracking_confidence=0.5)
+
+mp_hands = mp.solutions.hands
+hands = mp_hands.Hands(static_image_mode=False,
+                        model_complexity=1,
+                        min_detection_confidence=0.5,
+                        min_tracking_confidence=0.5)
 
 currentUser = ""
 typeSelected = ""
@@ -37,9 +44,6 @@ supported = [
         'stomach',
         'intestine',
 ]
-
-
-
 
 def pop_user(connectedUser):
     if user_queue:
@@ -72,7 +76,7 @@ def register_user(user, msg):
         if user_queue.index(user) == 0:
             currentUser = user  
             typeSelected = msg
-            print(currentUser)
+            # print(currentUser)
 
     except Exception as e:
         print("Error in registering user")
@@ -96,9 +100,14 @@ def process_frame(frame, trackType):
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
 
-        calcPosition = calculate_position(trackType, landmarks, mp_pose,cv2,image)
+        # calcPosition = calculate_position(trackType, landmarks, mp_pose, cv2, image)
+        # return calcPosition, image
+        organsClass = calculate_position_v2(landmarks, mp_pose, cv2, image)
+        command_position, unity_position = organsClass[trackType].get_position()
 
-        return calcPosition, image
+        if unity_position is not None:
+            return unity_position, image
+        
     return None, None
 
 async def receive_json(reader):
@@ -171,7 +180,6 @@ async def handle_client(reader, writer):
             json_type, jsonMsg = await receive_json(reader)
             frame = await receive_frame(reader)
 
-            
             if jsonMsg and json_type == 'json':
                 connectedUser = jsonMsg.get('uuid', '')
                 msg_text = jsonMsg.get('message', '')
@@ -180,11 +188,13 @@ async def handle_client(reader, writer):
             if frame is None:
                 break
 
+            adjustedFrame = adjust_orientation(frame=frame);
+
             if currentUser == user_queue[0]:
-                position, image = await loop.run_in_executor(None, process_frame, frame, typeSelected.lower())
+                position, image = await loop.run_in_executor(None, process_frame, adjustedFrame, typeSelected.lower())
 
                 if position is not None:               
-                     await send_position(writer, position=position)
+                    await send_position(writer, position=position)
                 if image is not None:
                     cv2.imshow(addr[0], image)
                     cv2.waitKey(1)
@@ -230,21 +240,41 @@ def debug_feed():
     cap = cv2.VideoCapture(0)
     while cap.isOpened():
         ret, frame = cap.read()
+
         image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         image.flags.writeable = False
-        results = pose.process(image)
-        landmarks = results.pose_landmarks
 
-        if results.pose_landmarks:
+        pose_results = pose.process(image)
+        landmarks = pose_results.pose_landmarks
+        
+        hands_results = hands.process(image)
+        hands_marks = hands_results.multi_hand_landmarks
+
+        if hands_marks:
             image.flags.writeable = True
             image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-            mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
 
-            if landmarks:
-                calculate_position("heart", landmarks, mp_pose,cv2,image)
-            
+            hand_position(image, hands_results, hands_marks)
+
             cv2.imshow("Mediapipe feed", image)
             cv2.waitKey(1)
+
+        # if pose_results.pose_landmarks:
+
+           
+        #     mp_drawing.draw_landmarks(image, pose_results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+
+        #     # if hands_marks:
+        #     #     for hand_landmarks in hands_marks:
+        #     #         print(hand_position(hand_landmarks, mp_hands, cv2, image))
+        #     #         mp_drawing.draw_landmarks(image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+
+        #     if landmarks:
+        #         # calculate_position("heart", landmarks, mp_pose,cv2,image)
+        #         organsClass = calculate_position_v2(landmarks, mp_pose, cv2, image)
+        #         command_position, unity_position = organsClass["liver"].get_position()
+
+
  
     cap.release()
     cv2.destroyAllWindows()  
@@ -256,6 +286,7 @@ def command():
         ret, frame = cap.read()
         image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         image.flags.writeable = False
+        
         results = pose.process(image)
         landmarks = results.pose_landmarks
 

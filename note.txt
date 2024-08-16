@@ -1,0 +1,6 @@
+Logs
+   - time frame between the start and end of calculation of position.
+   - pair value of variables if None or not.
+
+Hand Tracking for gesture control for quizz
+GUI APP

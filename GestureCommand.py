@@ -1,5 +1,5 @@
 import math
-from BodyLandmarkPosition import BodyLandmarkPosition, all_organ_position
+from BodyLandmarkPosition import BodyLandmarkPosition, calculate_position_v2
 
 class GestureCommand(BodyLandmarkPosition):
     def __init__(self, landmarks, mp_pose, cv2, image):
@@ -113,7 +113,7 @@ def get_gesture_command(landmarks, mp_pose, cv2, image, trackable):
         return command.check_hands_up(), None
     
     if trackable:
-        organs = all_organ_position(landmarks, mp_pose, cv2, image)
+        organs = calculate_position_v2(landmarks, mp_pose, cv2, image)
         wirst_calc =  command.calculate_wrist_position()
         for organ_name, organ in organs.items():
             organ_position=  organ.get_position()
