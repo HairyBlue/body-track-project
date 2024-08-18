@@ -6,3 +6,5 @@ logs/**
 
 backup-logs
 backup-logs/**
+
+output.log
