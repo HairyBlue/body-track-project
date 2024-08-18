@@ -1,17 +1,15 @@
+main_runner = "debug" # unity, debug, debug_quizz
+
 import cv2
 import numpy as np
 import mediapipe as mp
 import json
 import asyncio
+import time
 
 from BodyLandmarkPosition import calculate_position, calculate_position_v2
-from GestureCommand import get_gesture_command
-from HandLandmarkPostion import hand_position
-# for command
-trackable = False
-isUnity = False
-isDebug = True
-isCommand = False
+from Quizz import start_quiz
+from Logger import calc_time_and_log
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
@@ -37,13 +35,7 @@ typeSelected = ""
 user_queue = []
 unique_users = set()
 
-supported = [
-        'heart',
-        'brain',
-        'liver',
-        'stomach',
-        'intestine',
-]
+start_time=0
 
 def pop_user(connectedUser):
     if user_queue:
@@ -92,18 +84,41 @@ def adjust_orientation(frame):
 def process_frame(frame, trackType):
     image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     image.flags.writeable = False
-    results = pose.process(image)
-    landmarks = results.pose_landmarks
-    
-    if results.pose_landmarks:
+
+    # mp_pose
+    pose_results = pose.process(image)
+    landmarks = pose_results.pose_landmarks
+
+    # mp_hands
+    hands_results = hands.process(image)
+    hands_marks = hands_results.multi_hand_landmarks
+
+    if landmarks or hands_marks:
         image.flags.writeable = True
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-        mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
 
-        # calcPosition = calculate_position(trackType, landmarks, mp_pose, cv2, image)
-        # return calcPosition, image
-        organsClass = calculate_position_v2(landmarks, mp_pose, cv2, image)
-        command_position, unity_position = organsClass[trackType].get_position()
+        if hands_marks:
+            for hand_landmarks in hands_marks:
+                mp_drawing.draw_landmarks(image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+
+        if landmarks:
+            args = {
+                'landmarks': landmarks,
+                'mp_pose': mp_pose,
+                'cv2': cv2,
+                'image': image
+            }
+
+            args2 = {
+                'landmarks': hands_marks,
+                'mp_hands': mp_hands,
+                'cv2': cv2,
+                'image': image
+            }
+
+            mp_drawing.draw_landmarks(image, landmarks, mp_pose.POSE_CONNECTIONS)
+
+            command_position, unity_position =  calculate_position_v2(trackType, args)
 
         if unity_position is not None:
             return unity_position, image
@@ -144,12 +159,17 @@ async def receive_frame(reader):
 
 
 async def send_position(writer, position):
+    global start_time
+
     try:
         data = json.dumps(position).encode('utf-8')
         length_prefix = len(data).to_bytes(4, byteorder='little')
         writer.write(length_prefix + data)
-        await writer.drain()
+        
+        end_time = time.time()
+        calc_time_and_log(topic='send_position', start_time=start_time, end_time=end_time)
 
+        await writer.drain()
     except Exception as e:
         print(f"Error sending position: {e}")
 
@@ -158,7 +178,7 @@ async def send_queue_msg(writer, connectedUser):
         queueNum =  user_queue.index(connectedUser) + 1
         message = f"There is still user using the body tracking. Your queue number is {queueNum} from {len(user_queue)} number of user/s. Please wait on your turn..."
         queueMsq = {'uuid': connectedUser, 'queue': message}
-        print(queueMsq)
+
         data = json.dumps(queueMsq).encode('utf-8')
         length_prefix = len(data).to_bytes(4, byteorder='little')
 
@@ -171,12 +191,16 @@ async def send_queue_msg(writer, connectedUser):
 
 async def handle_client(reader, writer):
     global isTrackable
+    global start_time
+
     addr = writer.get_extra_info('peername')
     loop = asyncio.get_running_loop()
     connectedUser = ""
 
     try:
         while True:
+            start_time = time.time()
+
             json_type, jsonMsg = await receive_json(reader)
             frame = await receive_frame(reader)
 
@@ -192,9 +216,9 @@ async def handle_client(reader, writer):
 
             if currentUser == user_queue[0]:
                 position, image = await loop.run_in_executor(None, process_frame, adjustedFrame, typeSelected.lower())
-
-                if position is not None:               
+                if position is not None:            
                     await send_position(writer, position=position)
+
                 if image is not None:
                     cv2.imshow(addr[0], image)
                     cv2.waitKey(1)
@@ -239,8 +263,9 @@ async def unity_stream():
 def debug_feed():
     cap = cv2.VideoCapture(0)
     while cap.isOpened():
-        ret, frame = cap.read()
+        start_time = time.time()
 
+        ret, frame = cap.read()
         image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         image.flags.writeable = False
 
@@ -250,78 +275,95 @@ def debug_feed():
         hands_results = hands.process(image)
         hands_marks = hands_results.multi_hand_landmarks
 
-        if hands_marks:
+        if landmarks or hands_marks:
             image.flags.writeable = True
             image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
-            hand_position(image, hands_results, hands_marks)
+            if hands_marks:
+                for hand_landmarks in hands_marks:
+                    mp_drawing.draw_landmarks(image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+
+
+            if landmarks:
+                mp_drawing.draw_landmarks(image, landmarks, mp_pose.POSE_CONNECTIONS)
+                
+                # unpack dictionary later
+                args = {
+                    'landmarks': landmarks,
+                    'mp_pose': mp_pose,
+                    'cv2': cv2,
+                    'image': image
+                }
+
+                command_position, unity_position =  calculate_position_v2("heart", args)
+
+                if unity_position is not None:
+                    end_time = time.time()
+                    calc_time_and_log(topic='debug_unity_position', start_time=start_time, end_time=end_time)
+
 
             cv2.imshow("Mediapipe feed", image)
             cv2.waitKey(1)
 
-        # if pose_results.pose_landmarks:
-
-           
-        #     mp_drawing.draw_landmarks(image, pose_results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
-
-        #     # if hands_marks:
-        #     #     for hand_landmarks in hands_marks:
-        #     #         print(hand_position(hand_landmarks, mp_hands, cv2, image))
-        #     #         mp_drawing.draw_landmarks(image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-
-        #     if landmarks:
-        #         # calculate_position("heart", landmarks, mp_pose,cv2,image)
-        #         organsClass = calculate_position_v2(landmarks, mp_pose, cv2, image)
-        #         command_position, unity_position = organsClass["liver"].get_position()
-
-
- 
     cap.release()
     cv2.destroyAllWindows()  
 
 
-def command():
+def debug_quizz():
     cap = cv2.VideoCapture(0)
     while cap.isOpened():
         ret, frame = cap.read()
         image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         image.flags.writeable = False
         
-        results = pose.process(image)
-        landmarks = results.pose_landmarks
+        pose_results = pose.process(image)
+        landmarks = pose_results.pose_landmarks
+        
+        hands_results = hands.process(image)
+        hands_marks = hands_results.multi_hand_landmarks
 
-        if results.pose_landmarks:
-            global trackable
-
+        if landmarks:
             image.flags.writeable = True
             image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-            mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+        
+            mp_drawing.draw_landmarks(image, landmarks, mp_pose.POSE_CONNECTIONS)
+    
+            # unpack dictionary later
+            args = {
+                'landmarks': landmarks,
+                'mp_pose': mp_pose,
+                'cv2': cv2,
+                'image': image
+            }
 
-            isTracked, switchOrgan =  get_gesture_command(landmarks, mp_pose, cv2,image, trackable)
-            
-            if isTracked is not None and not trackable:
-                trackable = isTracked
+            args2 = {
+                'landmarks': hands_marks,
+                'mp_hands': mp_hands,
+                'cv2': cv2,
+                'image': image
+            }
 
-            if isTracked is not None and trackable:
-                trackable = isTracked
-                cv2.destroyAllWindows()
+            start_quiz(args=args, args2=args2)
 
-            if trackable:
-                if landmarks:
-                    
-                    cv2.imshow("Mediapipe feed", image)
-                    cv2.waitKey(1)
+            cv2.imshow("Mediapipe feed", image)
+            cv2.waitKey(1)
  
     cap.release()
     cv2.destroyAllWindows()  
 
 def main():
-    if isUnity:
+    # unity, debug, debug_quizz
+    # main_runner = "unity"
+
+    if main_runner == "unity":
         asyncio.run(unity_stream())
-    if isDebug:
+    elif main_runner == "debug":
         debug_feed()
-    if isCommand:
-        command()
+    elif main_runner == "debug_quzz":
+        debug_quizz
+    else:
+        print("No main runner choosen. Please choose between [unity, debug, debug_quizz] and change the main_runner at line 1 (main.py)")
+    
 
 if __name__ == '__main__':
     main()

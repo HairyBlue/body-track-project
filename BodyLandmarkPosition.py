@@ -213,16 +213,13 @@ def calculate_position(organ_type, landmarks, mp_pose, cv2, image):
         except Exception as e:
             print(e)
 
-
-
-
-def calculate_position_v2(landmarks, mp_pose, cv2, image):
+def calculate_position_v2(oType, args):
         try:
-            heart = HeartPosition(landmarks=landmarks, mp_pose=mp_pose, cv2=cv2, image=image)
-            brain = BrainPosition(landmarks=landmarks, mp_pose=mp_pose, cv2=cv2, image=image)
-            liver = LiverPosition(landmarks=landmarks, mp_pose=mp_pose, cv2=cv2, image=image)
-            stomach =  StomachPosition(landmarks=landmarks, mp_pose=mp_pose, cv2=cv2, image=image)
-            intestine = IntestinePosition(landmarks=landmarks, mp_pose=mp_pose, cv2=cv2, image=image)
+            heart = HeartPosition
+            brain = BrainPosition
+            liver = LiverPosition
+            stomach =  StomachPosition
+            intestine = IntestinePosition
 
             organs = {
                 'heart': heart,
@@ -231,6 +228,8 @@ def calculate_position_v2(landmarks, mp_pose, cv2, image):
                 'stomach': stomach,
                 'intestine': intestine
             }
-            return organs
+            
+            organ_cls = organs[oType]
+            return organ_cls(**args).get_position()
         except Exception as e:
             print(e)

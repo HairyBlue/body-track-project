@@ -1,6 +1,9 @@
+Continuous Adjustment for center position if using actual device on mobiel
+
 Logs
    - time frame between the start and end of calculation of position.
-   - pair value of variables if None or not.
+   - log quiz result, distanse between finger and organ position
+   - log quizz result for user, in unity or here. depends 
 
 Hand Tracking for gesture control for quizz
-GUI APP
+GUI APP if necessary

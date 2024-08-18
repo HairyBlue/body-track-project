@@ -1,6 +1,9 @@
 import math
 from BodyLandmarkPosition import BodyLandmarkPosition, calculate_position_v2
 
+quizzStarted = False
+organs = ['heart', 'brain', 'liver', 'stomach', 'intestine']
+
 class GestureCommand(BodyLandmarkPosition):
     def __init__(self, landmarks, mp_pose, cv2, image):
         super().__init__(landmarks, mp_pose, cv2, image)
@@ -8,7 +11,6 @@ class GestureCommand(BodyLandmarkPosition):
     def slope(self, point1, point2):
         if point1 and point2 and (point2[0] - point1[0]) != 0:
             return (point2[1] - point1[1]) / (point2[0] - point1[0])
-        
         return None
     
     def check_crossed_arms(self):
@@ -89,39 +91,46 @@ class GestureCommand(BodyLandmarkPosition):
         return calc_wrist
     
 
-    def calculate_chosem_organ(self, wirst_calc, organ_name , organ_position):
-        left_wrist, right_wrist = wirst_calc
+    def calculate_chosen_organ(self, organ_name , organ_position, hand_position):
+        print(organ_name, organ_position, hand_position)
 
 
-        if left_wrist is None and right_wrist is None:
-            return None
+class HandLandmarkPostion:
+    def __init__(self, landmarks, mp_hands, cv2, image):
+        self.landmarks = landmarks
+        self.mp_hands = mp_hands
+        self.cv2 = cv2
+        self.image = image
 
-        # BRAIN, HEART, STOMACH, LIVER, AND INTESTINE
-        if right_wrist is not None and organ_position is not None:
-            result = abs(right_wrist[0] - organ_position[0][0]) 
-            # print("wrist to brain ",  result)
-            # print("right_wrist ",  abs(right_wrist[0]))
-            # print("right_wrist_y ",  abs(right_wrist[1]))
-            if 300 > abs(right_wrist[0]) < 350 and 180 > abs(right_wrist[1]) < 250 and result < 70:
-                print(organ_name)
+    def landmark_list(self):
+        return [(lm.x, lm.y, lm.z) for lm in  self.hands_marks.landmark]
 
-
-def get_gesture_command(landmarks, mp_pose, cv2, image, trackable):
-    command = GestureCommand(landmarks=landmarks, mp_pose=mp_pose, cv2=cv2, image=image)
-
-    if not trackable: 
-        return command.check_hands_up(), None
-    
-    if trackable:
-        organs = calculate_position_v2(landmarks, mp_pose, cv2, image)
-        wirst_calc =  command.calculate_wrist_position()
-        for organ_name, organ in organs.items():
-            organ_position=  organ.get_position()
-            # if organ_name is 'brain':
-            if organ_position is not None:
-                command.calculate_chosem_organ(wirst_calc=wirst_calc, organ_name=organ_name, organ_position=organ_position)
-        return command.check_crossed_arms(), None
+    def get_landmark(self, landmark_name):
+        landmarks = self.landmark_list()
+        landmark = landmarks[self.mp_hands.HandLandmark[landmark_name].value]
+        return landmark if 0 <= landmark[0] <= 1 and 0 <= landmark[1] <= 1 else None
     
 
 
-    return None, None
+def start_quiz(args, args2):
+    global quizzStarted
+    command = GestureCommand(**args)
+
+    hands_up = command.check_hands_up()
+    crossed_arm = command.check_crossed_arms()
+
+    if quizzStarted == True:
+        if crossed_arm is not None:
+            quizzStarted = crossed_arm
+
+    if quizzStarted == False:
+        if hands_up is not None:
+            quizzStarted = hands_up
+
+    if quizzStarted:
+        HandLandmarkPostion(**args2)
+
+        for organ in organs:
+            command_position, unity_position = calculate_position_v2(organ, args)
+            if command_position is not None:
+                command.calculate_chosen_organ(organ, command_position, None)

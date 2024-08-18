@@ -1,0 +1,13 @@
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+Traceback (most recent call last):
+  File "main.py", line 369, in <module>
+    main()
+  File "main.py", line 361, in main
+    debug_feed()
+  File "main.py", line 272, in debug_feed
+    pose_results = pose.process(image)
+  File "C:\Users\Hairyblue\Documents\MYWORKSPACE\Thesis\prototype\body tracking\venv\lib\site-packages\mediapipe\python\solutions\pose.py", line 185, in process
+    results = super().process(input_data={'image': image})
+  File "C:\Users\Hairyblue\Documents\MYWORKSPACE\Thesis\prototype\body tracking\venv\lib\site-packages\mediapipe\python\solution_base.py", line 335, in process
+    self._graph.wait_until_idle()
+KeyboardInterrupt
