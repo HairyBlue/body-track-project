@@ -367,26 +367,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-
-
-
-                # if isTrackable:
-                
-                #     #  topic the message recieve organ or system
-                #     # logger start time for frame ms recieve
-                #     frame = await receive_frame(reader)
-                #     if frame is None:
-                #         break
-                #     # logger end time for frame ms receive and log it
-
-                #     # frame = adjust_orientation(frame=frame)
-                #     # logger start time for frame ms recieve
-                #     position, image = await loop.run_in_executor(None, process_frame, frame, "heart")
-
-                #     if position is not None:               
-                #         await send_position(writer, position=position)
-                #     if image is None:
-                #         cv2.imshow(addr[0], image)
-                #         cv2.waitKey(1)
