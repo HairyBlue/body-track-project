@@ -22,7 +22,7 @@ python main.py
 
 
 ## Using bash (svc.sh)
-Prerequisites: install [git bash]() when using windows
+Prerequisites: install [git bash]() when using windows\
 Used git bash as your terminal
 
 ### Building services
