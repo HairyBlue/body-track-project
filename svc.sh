@@ -11,7 +11,7 @@ fi
 
 if [[ -d 'logs' ]]; then
    if [[ "$(ls -A logs)" ]]; then
-      echo "create back for logs"
+      echo "create backup for logs"
       bkp="$backup/$timestamp-bkp"
       mkdir $bkp
       cp -r logs/* $bkp
@@ -56,7 +56,7 @@ function fstart() {
          exit 1
       fi
    elif [[ -d "venv/bin" ]]; then
-      ./venv/bin/python main.py > output.log 2>&1
+      ./venv/bin/python main.py 2> output.log 
       if [[ $? -ne 0 ]]; then
          echo "Error occurred while running main.py. See output.log for details."
          cat output.log
