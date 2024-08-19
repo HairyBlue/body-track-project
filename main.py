@@ -230,7 +230,7 @@ async def handle_client(reader, writer):
                     if image is not None:
                         cv2.imshow(addr[0], image)
                         cv2.waitKey(1)
-                        
+
             else:
                 if len(connectedUser) > 0:
                     await send_queue_msg(writer, connectedUser)
@@ -249,9 +249,9 @@ async def handle_client(reader, writer):
             dequeue_user()
             if user_queue:
                 currentUser = user_queue[0]  
-  
-        # if other user quit or any error happen pop them, dont remove the current user
-        pop_user(connectedUser)
+        else:
+            # if other user quit or any error happen pop them, dont remove the current user
+            pop_user(connectedUser)
 
 async def cb(reader, writer):
     addr = writer.get_extra_info('peername')
