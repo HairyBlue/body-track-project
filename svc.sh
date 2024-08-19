@@ -37,27 +37,31 @@ function fbuild() {
       python -m venv venv || die "unable to create venv"
    fi
    
-   if [[ -d "venv/Scripts" ]]; then
-      source venv/Scripts/activate
+   if [[ -d "./venv/Scripts" ]]; then
+      source ./venv/Scripts/activate
       sleep 2
       ./venv/Scripts/python -m pip install -r requirements.txt || die "unable to install requirements"
-   elif [[ -d "venv/bin" ]]; then
-      source venv/bin/activate
+   elif [[ -d "./venv/bin" ]]; then
+      source ./venv/bin/activate
       sleep 2
       ./venv/bin/python -m pip install -r requirements.txt || die "unable to install requirements"
    fi
+
+   echo "Virtual environment activated."
+   which pip
+   which python
 }
 
 
 function fstart() {
-   if [[ -d "venv/Scripts" ]]; then
+   if [[ -d "./venv/Scripts" ]]; then
       ./venv/Scripts/python main.py 2> output.log
       if [[ $? -ne 0 ]]; then
          echo "Error occurred while running main.py. See output.log for details."
          cat output.log
          exit 1
       fi
-   elif [[ -d "venv/bin" ]]; then
+   elif [[ -d "./venv/bin" ]]; then
       ./venv/bin/python main.py 2> output.log 
       if [[ $? -ne 0 ]]; then
          echo "Error occurred while running main.py. See output.log for details."
@@ -70,9 +74,9 @@ function fstart() {
 }
 
 function freeze() {
-   if [[ -d "venv/Scripts" ]]; then
+   if [[ -d "./venv/Scripts" ]]; then
       ./venv/Scripts/python -m pip freeze > requirements.txt
-   elif [[ -d "venv/bin" ]]; then
+   elif [[ -d "./venv/bin" ]]; then
       ./venv/bin/python -m pip freeze > requirements.txt
    else 
       die "Virtual environment not found. Build first"
@@ -80,9 +84,9 @@ function freeze() {
 }
 
 function finstall() {
-   if [[ -d "venv/Scripts" ]]; then
+   if [[ -d "./venv/Scripts" ]]; then
       ./venv/Scripts/python -m pip install "$1" || die "unable to install"
-   elif [[ -d "venv/bin" ]]; then
+   elif [[ -d "./venv/bin" ]]; then
       ./venv/bin/python -m pip install "$1" || die "unable to install"
    else 
       die "Virtual environment not found. Build first"
@@ -90,9 +94,9 @@ function finstall() {
 }
 
 function funinstall() {
-   if [[ -d "venv/Scripts" ]]; then
+   if [[ -d "./venv/Scripts" ]]; then
       ./venv/Scripts/python -m pip uninstall "$1" || die "unable to uninstall"
-   elif [[ -d "venv/bin" ]]; then
+   elif [[ -d "./venv/bin" ]]; then
       ./venv/bin/python -m pip uninstall "$1" || die "unable to uninstall"
    else 
       die "Virtual environment not found. Build first"

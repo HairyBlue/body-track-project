@@ -5,18 +5,49 @@ This project demonstrates the use of body tracking in mobile augmented reality t
 - [Python](https://www.python.org/downloads/) (version 3.8 or higher)
 - [Git](https://git-scm.com/downloads) (required for running bash scripts on Windows)
 
+
+
 ## Setting Up the Virtual Environment
-To ensure consistency and manage dependencies, a Python virtual environment is recommended.
+To ensure consistency and manage dependencies, a Python virtual environment is recommended. Follow these steps to set up and activate the virtual environment.
+
+### Create the Virtual Environment
+Run the following command to create a virtual environment named venv:
 ``` bash
 python -m venv venv
-source venv/Scripts/activate # When using windows
-source venv/bin/activate # When using linux or mac
+```
+### Activate the virtual environment
+On Windows
+``` bash
+# Command Prompt or PowerShell
+.\venv\Scripts\activate # Or venv\Scripts\activate or activate
+# Git Bash
+source ./venv/Scripts/activate # Or source venv/Scripts/activate 
+```
+
+On Linux or macOS
+``` bash
+source venv/bin/activate 
 ```
 
 ## Installation
 After setting up the virtual environment, install the required dependencies listed in the requirements.txt file.
 ```bash
 pip install -r requirements.txt
+```
+
+### Troubleshooting Installation Errors
+If you encounter an error during installation and the virtual environment has been activated, try the following steps:\
+On Windows
+``` bash
+# Command Prompt or PowerShell
+.\venv\Scripts\python -m pip install -r requirements.txt # Or venv\Scripts\python -m pip install -r requirements.txt
+# Git Bash
+./venv/Scripts/python -m pip install -r requirements.txt # venv/Scripts/python  -m pip install -r requirements.txt
+```
+
+When using Linux or Max
+``` bash
+venv/bin/activate -m pip install -r requirements.txt
 ```
 
 ## Run Application
@@ -38,6 +69,12 @@ To build the necessary components of the application, execute:
 To start the application services, run:
 ``` bash
 ./svc.sh start
+```
+
+## Deactivate the virtual environment
+To deactivate the virtual environment and return to the global Python environment, simply run:
+``` bash
+deactivate
 ```
 
 ## Additional Resources
