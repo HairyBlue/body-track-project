@@ -1,8 +1,4 @@
 settings:
-  main_runner: "debug" # unity, debug, debug_quizz
-  debug_organ: "brain" # heart, brain, liver, stomach, intestine
-
-  enable_adjustments_settings: False
 
   mp:
     pose:
@@ -22,7 +18,7 @@ settings:
   position:
     heart:
       command:
-        x_offset: 100000
+        x_offset: 0
         y_offset: -200
         z_offset: 0
       unity:

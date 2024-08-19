@@ -355,8 +355,7 @@ def debug_quizz():
     cv2.destroyAllWindows()  
 
 def main():
-    # unity, debug, debug_quizz
-    # main_runner = "unity"
+    print("CONFIGS  => ", configs)
 
     if main_runner == "unity":
         asyncio.run(unity_stream())

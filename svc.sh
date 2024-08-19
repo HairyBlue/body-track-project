@@ -71,9 +71,9 @@ function fstart() {
 
 function freeze() {
    if [[ -d "venv/Scripts" ]]; then
-      ./venv/Scripts/python -m pip freeze > requirements.tx
+      ./venv/Scripts/python -m pip freeze > requirements.txt
    elif [[ -d "venv/bin" ]]; then
-      ./venv/bin/python -m pip freeze > requirements.tx
+      ./venv/bin/python -m pip freeze > requirements.txt
    else 
       die "Virtual environment not found. Build first"
    fi
@@ -89,6 +89,16 @@ function finstall() {
    fi
 }
 
+function funinstall() {
+   if [[ -d "venv/Scripts" ]]; then
+      ./venv/Scripts/python -m pip uninstall "$1" || die "unable to uninstall"
+   elif [[ -d "venv/bin" ]]; then
+      ./venv/bin/python -m pip uninstall "$1" || die "unable to uninstall"
+   else 
+      die "Virtual environment not found. Build first"
+   fi
+}
+
 if [[ "$1" == "build" ]]; then
    fbuild
 elif [[ "$1" == "start" ]]; then
@@ -97,6 +107,8 @@ elif [[ "$1" == "freeze" ]]; then
    freeze
 elif [[ "$1" == "install" ]]; then
    finstall $2
+elif [[ "$1" == "uninstall" ]]; then
+   funinstall $2
 elif [[ "$1" == "rbkp" ]]; then
    rm -rf "$backup"
 else
@@ -104,5 +116,6 @@ else
    echo "start       - start services"
    echo "freeze      - generate a requirements.txt file"
    echo "install     - install neccessary dependencies. Usage: ./svc.sh install <package-name> | ./svc.sh install cv2"
+   echo "uninstall   - uninstall neccessary dependencies. Usage: ./svc.sh uninstall <package-name> | ./svc.sh uninstall cv2"
    echo "rbkp        - remove backup folder"
 fi
