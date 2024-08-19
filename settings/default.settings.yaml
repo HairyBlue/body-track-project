@@ -22,7 +22,7 @@ settings:
   position:
     heart:
       command:
-        x_offset: 100000
+        x_offset: 0
         y_offset: -200
         z_offset: 0
       unity:
