@@ -26,7 +26,7 @@ pose = mp_pose.Pose(**mp_settings_pose)
 mp_hands = mp.solutions.hands
 hands = mp_hands.Hands(**mp_settings_hands)
 
-
+currentAddr = ""
 currentUser = ""
 typeSelected = ""
 
@@ -55,7 +55,8 @@ def dequeue_user():
     return None
 
 
-def register_user(user, msg):
+def register_user(user, msg, addr):
+    global currentAddr
     global currentUser
     global typeSelected
     try:
@@ -66,6 +67,7 @@ def register_user(user, msg):
         if user_queue.index(user) == 0:
             currentUser = user  
             typeSelected = msg
+            currentAddr = addr
             # print(currentUser)
 
     except Exception as e:
@@ -156,18 +158,19 @@ async def receive_frame(reader):
         return None, None
 
 
-async def send_position(writer, position):
+async def send_position(writer, position, addr):
     global start_time
-
+    global currentAddr
     try:
-        data = json.dumps(position).encode('utf-8')
-        length_prefix = len(data).to_bytes(4, byteorder='little')
-        writer.write(length_prefix + data)
-        
-        end_time = time.time()
-        calc_time_and_log(topic='send_position', start_time=start_time, end_time=end_time)
+        if currentAddr == addr:
+            data = json.dumps(position).encode('utf-8')
+            length_prefix = len(data).to_bytes(4, byteorder='little')
+            writer.write(length_prefix + data)
+            
+            end_time = time.time()
+            calc_time_and_log(topic='send_position', start_time=start_time, end_time=end_time)
 
-        await writer.drain()
+            await writer.drain()
     except Exception as e:
         print(f"Error sending position: {e}")
 
@@ -190,6 +193,7 @@ async def send_queue_msg(writer, connectedUser):
 async def handle_client(reader, writer):
     global isTrackable
     global start_time
+    global currentUser
 
     addr = writer.get_extra_info('peername')
     loop = asyncio.get_running_loop()
@@ -198,6 +202,7 @@ async def handle_client(reader, writer):
     try:
         while True:
             start_time = time.time()
+            addr = writer.get_extra_info('peername')
 
             json_type, jsonMsg = await receive_json(reader)
             frame = await receive_frame(reader)
@@ -205,21 +210,27 @@ async def handle_client(reader, writer):
             if jsonMsg and json_type == 'json':
                 connectedUser = jsonMsg.get('uuid', '')
                 msg_text = jsonMsg.get('message', '')
-                register_user(connectedUser, msg_text)
+                register_user(connectedUser, msg_text, addr)
+
+            if currentUser == connectedUser:
+
+                if frame is None:
+                    break
                 
-            if frame is None:
-                break
+                adjustedFrame = frame
 
-            adjustedFrame = adjust_orientation(frame=frame);
+                if default_settings["adjust_orientation"]:
+                    adjustedFrame = adjust_orientation(frame=frame);
 
-            if currentUser == user_queue[0]:
-                position, image = await loop.run_in_executor(None, process_frame, adjustedFrame, typeSelected.lower())
-                if position is not None:            
-                    await send_position(writer, position=position)
+                
+                    position, image = await loop.run_in_executor(None, process_frame, adjustedFrame, typeSelected.lower())
+                    if position is not None:            
+                        await send_position(writer, position=position, addr=addr)
 
-                if image is not None:
-                    cv2.imshow(addr[0], image)
-                    cv2.waitKey(1)
+                    if image is not None:
+                        cv2.imshow(addr[0], image)
+                        cv2.waitKey(1)
+                        
             else:
                 if len(connectedUser) > 0:
                     await send_queue_msg(writer, connectedUser)
@@ -236,6 +247,9 @@ async def handle_client(reader, writer):
         # dequeue current user
         if currentUser == user_queue[0]:
             dequeue_user()
+            if user_queue:
+                currentUser = user_queue[0]  
+  
         # if other user quit or any error happen pop them, dont remove the current user
         pop_user(connectedUser)
 

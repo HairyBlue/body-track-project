@@ -2,6 +2,7 @@ settings:
   main_runner: "debug" # unity, debug, debug_quizz
   debug_organ: "brain" # heart, brain, liver, stomach, intestine
 
+  adjust_orientation: False # If main runner is unity => True if mobile device used and False when using webcam
   enable_adjustments_settings: False # True or False
 
   mp:
