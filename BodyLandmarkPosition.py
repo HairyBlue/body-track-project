@@ -1,4 +1,13 @@
 import math
+from config import svc_configs
+
+from config import svc_configs
+
+configs = svc_configs()
+default_settings  = configs["default"]["settings"]
+
+position_settings = default_settings["position"]
+
 class BodyLandmarkPosition:
     def __init__(self, landmarks, mp_pose, cv2, image):
         self.landmarks = landmarks
@@ -38,7 +47,7 @@ class BodyLandmarkPosition:
         landmark = landmarks[self.mp_pose.PoseLandmark[landmark_name].value]
         return landmark if 0 <= landmark[0] <= 1 and 0 <= landmark[1] <= 1 else None
     
-    def calculate_organ_position(self, center1, center2, x_offset, y_offset):
+    def calculate_organ_position(self, center1, center2, x_offset=0, y_offset=0):
         image_height, image_width, _ = self.image.shape
         x = int(center1[0] * image_width) + x_offset
         y = int((center1[1] + (center2[1] - center1[1]) ) * image_height + y_offset)
@@ -47,7 +56,7 @@ class BodyLandmarkPosition:
         self.cv2_circle(organ_postion=(x, y, z))
         return x, y, z
 
-    def calculate_unity_coordinates(self, center, x_offset, y_offset, z_offset):
+    def calculate_unity_coordinates(self, center, x_offset=0, y_offset=0, z_offset=0):
         image_height, image_width, _ = self.image.shape
 
         normalized_x = center[0]
@@ -64,6 +73,15 @@ class BodyLandmarkPosition:
         position_dict = { 'x': x_unity_adjusted, 'y': y_unity_adjusted, 'z': z_unity_adjusted }
     
         return position_dict
+    
+    def all_unity_coordinates(self, x_offset=0, y_offset=0, z_offset=0):
+        adjusted_landmarks = []
+        
+        for lm in self.landmark_list():
+            adjusted_landmark = self.calculate_unity_coordinates(lm, x_offset, y_offset, z_offset)
+            adjusted_landmarks.append(adjusted_landmark)
+        
+        return adjusted_landmarks
     
 
 class HeartPosition(BodyLandmarkPosition):

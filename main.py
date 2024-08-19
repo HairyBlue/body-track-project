@@ -1,5 +1,3 @@
-main_runner = "debug" # unity, debug, debug_quizz
-
 import cv2
 import numpy as np
 import mediapipe as mp
@@ -10,24 +8,24 @@ import time
 from BodyLandmarkPosition import calculate_position, calculate_position_v2
 from Quizz import start_quiz
 from Logger import calc_time_and_log
+from config import svc_configs
 
+configs = svc_configs()
+default_settings  = configs["default"]["settings"]
+main_runner = default_settings["mainRunner"]
+
+
+mp_settings_pose = default_settings["mp"]["pose"]
+mp_settings_hands = default_settings["mp"]["hands"]
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 
 mp_pose = mp.solutions.pose
-pose = mp_pose.Pose(static_image_mode=False,
-                    model_complexity=1,
-                    smooth_landmarks=True,
-                    enable_segmentation=False,
-                    smooth_segmentation=True,
-                    min_detection_confidence=0.5,
-                    min_tracking_confidence=0.5)
+pose = mp_pose.Pose(**mp_settings_pose)
 
 mp_hands = mp.solutions.hands
-hands = mp_hands.Hands(static_image_mode=False,
-                        model_complexity=1,
-                        min_detection_confidence=0.5,
-                        min_tracking_confidence=0.5)
+hands = mp_hands.Hands(**mp_settings_hands)
+
 
 currentUser = ""
 typeSelected = ""
@@ -362,7 +360,7 @@ def main():
     elif main_runner == "debug_quzz":
         debug_quizz
     else:
-        print("No main runner choosen. Please choose between [unity, debug, debug_quizz] and change the main_runner at line 1 (main.py)")
+        print("No main runner choosen. Please choose between [unity, debug, debug_quizz] and change the mainRunner on ./settings/default.settings.yaml")
     
 
 if __name__ == '__main__':

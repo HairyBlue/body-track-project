@@ -33,7 +33,9 @@ function die() {
 }
 
 function fbuild() {
-   python -m venv venv || die "unable to create venv"
+   if [[ ! -d "venv" ]]; then
+      python -m venv venv || die "unable to create venv"
+   fi
    
    if [[ -d "venv/Scripts" ]]; then
       source venv/Scripts/activate
@@ -67,14 +69,40 @@ function fstart() {
    fi
 }
 
+function freeze() {
+   if [[ -d "venv/Scripts" ]]; then
+      ./venv/Scripts/python -m pip freeze > requirements.tx
+   elif [[ -d "venv/bin" ]]; then
+      ./venv/bin/python -m pip freeze > requirements.tx
+   else 
+      die "Virtual environment not found. Build first"
+   fi
+}
+
+function finstall() {
+   if [[ -d "venv/Scripts" ]]; then
+      ./venv/Scripts/python -m pip install "$1" || die "unable to install"
+   elif [[ -d "venv/bin" ]]; then
+      ./venv/bin/python -m pip install "$1" || die "unable to install"
+   else 
+      die "Virtual environment not found. Build first"
+   fi
+}
+
 if [[ "$1" == "build" ]]; then
    fbuild
 elif [[ "$1" == "start" ]]; then
    fstart
+elif [[ "$1" == "freeze" ]]; then
+   freeze
+elif [[ "$1" == "install" ]]; then
+   finstall $2
 elif [[ "$1" == "rbkp" ]]; then
    rm -rf "$backup"
 else
    echo "build       - build the service, this will activate virtual environment and install dependencies"
    echo "start       - start services"
+   echo "freeze      - generate a requirements.txt file"
+   echo "install     - install neccessary dependencies. Usage: ./svc.sh install <package-name> | ./svc.sh install cv2"
    echo "rbkp        - remove backup folder"
 fi
