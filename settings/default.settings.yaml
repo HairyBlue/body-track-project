@@ -2,7 +2,7 @@ settings:
   main_runner: "debug" # unity, debug, debug_quizz
   debug_organ: "brain" # heart, brain, liver, stomach, intestine
 
-  enable_adjustments_settings: False
+  enable_adjustments_settings: False # True or False
 
   mp:
     pose:
