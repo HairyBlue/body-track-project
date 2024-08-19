@@ -115,10 +115,10 @@ def process_frame(frame, trackType):
             }
 
             mp_drawing.draw_landmarks(image, landmarks, mp_pose.POSE_CONNECTIONS)
-
-            command_position, unity_position =  calculate_position_v2(trackType, args)
-
-        if unity_position is not None:
+            results =  calculate_position_v2(trackType, args)
+        
+        if results is not None:
+            _ , unity_position = results
             return unity_position, image
         
     return None, None
@@ -261,47 +261,51 @@ async def unity_stream():
 def debug_feed():
     cap = cv2.VideoCapture(0)
     while cap.isOpened():
-        start_time = time.time()
+        try:
+            start_time = time.time()
 
-        ret, frame = cap.read()
-        image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        image.flags.writeable = False
+            ret, frame = cap.read()
+            image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            image.flags.writeable = False
 
-        pose_results = pose.process(image)
-        landmarks = pose_results.pose_landmarks
-        
-        hands_results = hands.process(image)
-        hands_marks = hands_results.multi_hand_landmarks
+            pose_results = pose.process(image)
+            landmarks = pose_results.pose_landmarks
+            
+            hands_results = hands.process(image)
+            hands_marks = hands_results.multi_hand_landmarks
 
-        if landmarks or hands_marks:
-            image.flags.writeable = True
-            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+            if landmarks or hands_marks:
+                image.flags.writeable = True
+                image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
-            if hands_marks:
-                for hand_landmarks in hands_marks:
-                    mp_drawing.draw_landmarks(image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-
-
-            if landmarks:
-                mp_drawing.draw_landmarks(image, landmarks, mp_pose.POSE_CONNECTIONS)
-                
-                # unpack dictionary later
-                args = {
-                    'landmarks': landmarks,
-                    'mp_pose': mp_pose,
-                    'cv2': cv2,
-                    'image': image
-                }
-
-                command_position, unity_position =  calculate_position_v2("heart", args)
-
-                if unity_position is not None:
-                    end_time = time.time()
-                    calc_time_and_log(topic='debug_unity_position', start_time=start_time, end_time=end_time)
+                if hands_marks:
+                    for hand_landmarks in hands_marks:
+                        mp_drawing.draw_landmarks(image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
 
 
-            cv2.imshow("Mediapipe feed", image)
-            cv2.waitKey(1)
+                if landmarks:
+                    mp_drawing.draw_landmarks(image, landmarks, mp_pose.POSE_CONNECTIONS)
+                    
+                    # unpack dictionary later
+                    args = {
+                        'landmarks': landmarks,
+                        'mp_pose': mp_pose,
+                        'cv2': cv2,
+                        'image': image
+                    }
+                    
+                    results =  calculate_position_v2("brain", args)
+                    
+                    if results is not None:
+                        command_position, unity_position = results
+                        end_time = time.time()
+                        calc_time_and_log(topic='debug_unity_position', start_time=start_time, end_time=end_time)
+
+
+                cv2.imshow("Mediapipe feed", image)
+                cv2.waitKey(1)
+        except Exception as e:
+            print(e)
 
     cap.release()
     cv2.destroyAllWindows()  

@@ -93,13 +93,17 @@ class HeartPosition(BodyLandmarkPosition):
         pair_hip = self.landmark_pair('LEFT_HIP', 'RIGHT_HIP')
 
         if pair_shoulder is None or pair_hip is None:
-            return None, None
+            return None
 
         center_shoulder = self.center(pair_shoulder)
         center_hip = self.center(pair_hip)
+        
+        offsets = position_settings["heart"]
+        offset_command = offsets["command"]
+        offset_unity = offsets["unity"]
 
-        command_position =  self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=0, y_offset=-200)
-        unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=0, y_offset=-1.5, z_offset=15)
+        command_position =  self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=offset_command["x_offset"], y_offset=offset_command["y_offset"])
+        unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"])
         return command_position, unity_position
 
 class BrainPosition(BodyLandmarkPosition):
@@ -114,9 +118,13 @@ class BrainPosition(BodyLandmarkPosition):
             return None 
         
         center_ear = self.center(pair_ear)
+        
+        offsets = position_settings["brain"]
+        offset_command = offsets["command"]
+        offset_unity = offsets["unity"]
 
-        command_position = self.calculate_organ_position(center1=center_ear, center2=nose, x_offset=0, y_offset=- 50)
-        unity_position = self.calculate_unity_coordinates(center=center_ear, x_offset=0, y_offset=+ 1.2, z_offset=4)
+        command_position = self.calculate_organ_position(center1=center_ear, center2=nose, x_offset=offset_command["x_offset"], y_offset=offset_command["y_offset"])
+        unity_position = self.calculate_unity_coordinates(center=center_ear, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"])
         return command_position, unity_position
 
 class LiverPosition(BodyLandmarkPosition):
@@ -128,13 +136,17 @@ class LiverPosition(BodyLandmarkPosition):
         pair_hip = self.landmark_pair('LEFT_HIP', 'RIGHT_HIP')
 
         if pair_shoulder is None or pair_hip is None:
-            return None, None
+            return None
 
         center_shoulder = self.center(pair_shoulder)
         center_hip = self.center(pair_hip)
 
-        command_position = self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=-35, y_offset=-150)
-        unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=-0.8, y_offset=-2, z_offset=4)
+        offsets = position_settings["liver"]
+        offset_command = offsets["command"]
+        offset_unity = offsets["unity"]
+
+        command_position = self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=offset_command["x_offset"], y_offset=offset_command["y_offset"])
+        unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"])
         return command_position, unity_position
     
 class StomachPosition(BodyLandmarkPosition):
@@ -151,8 +163,12 @@ class StomachPosition(BodyLandmarkPosition):
         center_shoulder = self.center(pair_shoulder)
         center_hip = self.center(pair_hip)
 
-        command_position = self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=30, y_offset=-145)
-        unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=0.85, y_offset=-2.5, z_offset=4)
+        offsets = position_settings["stomach"]
+        offset_command = offsets["command"]
+        offset_unity = offsets["unity"]
+
+        command_position = self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=offset_command["x_offset"], y_offset=offset_command["y_offset"])
+        unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"])
         return command_position, unity_position
 
 class IntestinePosition(BodyLandmarkPosition):
@@ -169,8 +185,12 @@ class IntestinePosition(BodyLandmarkPosition):
         center_shoulder = self.center(pair_shoulder)
         center_hip = self.center(pair_hip)
 
-        command_position = self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=0, y_offset=-100)
-        unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=0, y_offset=-2.8, z_offset=4)
+        offsets = position_settings["intestine"]
+        offset_command = offsets["command"]
+        offset_unity = offsets["unity"]
+
+        command_position = self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=offset_command["x_offset"], y_offset=offset_command["y_offset"])
+        unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"])
         return command_position, unity_position
     
 

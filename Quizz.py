@@ -131,6 +131,7 @@ def start_quiz(args, args2):
         HandLandmarkPostion(**args2)
 
         for organ in organs:
-            command_position, unity_position = calculate_position_v2(organ, args)
-            if command_position is not None:
+            results = calculate_position_v2(organ, args)
+            if results is not None:
+                command_position, unity_position = results
                 command.calculate_chosen_organ(organ, command_position, None)
