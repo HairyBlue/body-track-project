@@ -12,7 +12,7 @@ from config import svc_configs
 
 configs = svc_configs()
 default_settings  = configs["default"]["settings"]
-main_runner = default_settings["mainRunner"]
+main_runner = default_settings["main_runner"]
 
 
 mp_settings_pose = default_settings["mp"]["pose"]
@@ -294,7 +294,8 @@ def debug_feed():
                         'image': image
                     }
                     
-                    results =  calculate_position_v2("brain", args)
+                    debug_organ = default_settings["debug_organ"]
+                    results =  calculate_position_v2(debug_organ, args)
                     
                     if results is not None:
                         command_position, unity_position = results

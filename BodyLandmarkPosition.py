@@ -270,4 +270,4 @@ def calculate_position_v2(oType, args):
             organ_cls = organs[oType]
             return organ_cls(**args).get_position()
         except Exception as e:
-            print(e)
+            print("Unable to calculate organ position either not in the dictionary or misspelled orgname ",  e)
