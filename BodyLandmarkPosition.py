@@ -74,14 +74,26 @@ class BodyLandmarkPosition:
     
         return position_dict
     
+    def validate_landmarks_list(self, landmark_list):
+        if len(landmark_list) == 33:
+            print("Validation passed: 33 landmarks found.")
+            return True
+        else:
+            print(f"Validation failed: {len(landmark_list)} landmarks found.")
+            return False
+    
     def all_unity_coordinates(self, x_offset=0, y_offset=0, z_offset=0):
         adjusted_landmarks = []
-        
-        for lm in self.landmark_list():
-            adjusted_landmark = self.calculate_unity_coordinates(lm, x_offset, y_offset, z_offset)
-            adjusted_landmarks.append(adjusted_landmark)
-        
-        return adjusted_landmarks
+
+        landmarks_list = self.landmark_list()
+
+        if self.validate_landmarks_list(landmarks_list=landmarks_list):
+            for lm in landmarks_list:
+                adjusted_landmark = self.calculate_unity_coordinates(lm, x_offset, y_offset, z_offset)
+                adjusted_landmarks.append(adjusted_landmark)
+                return adjusted_landmarks
+        else:
+            return None
     
 
 class HeartPosition(BodyLandmarkPosition):
@@ -193,7 +205,21 @@ class IntestinePosition(BodyLandmarkPosition):
         unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"])
         return command_position, unity_position
     
+class BodyPosition(BodyLandmarkPosition):
+    def __init__(self, landmarks, mp_pose, cv2, image):
+        super().__init__(landmarks, mp_pose, cv2, image)
 
+    def get_position(self):
+
+        offsets = position_settings["body"]
+        offset_unity = offsets["unity"]
+    
+        all_unity_position = self.all_unity_coordinates(x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"])
+
+        if all_unity_position is None:
+            return None
+        
+        return None, all_unity_position
 
 
 def calculate_position(organ_type, landmarks, mp_pose, cv2, image):
@@ -258,13 +284,15 @@ def calculate_position_v2(oType, args):
             liver = LiverPosition
             stomach =  StomachPosition
             intestine = IntestinePosition
+            body = BodyPosition
 
             organs = {
                 'heart': heart,
                 'brain': brain,
                 'liver': liver,
                 'stomach': stomach,
-                'intestine': intestine
+                'intestine': intestine,
+                'body': body
             }
             
             organ_cls = organs[oType]

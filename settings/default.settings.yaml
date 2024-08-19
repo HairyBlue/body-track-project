@@ -69,3 +69,13 @@ settings:
         x_offset: 0
         y_offset: -2.8
         z_offset: 4
+
+    body:
+      command:
+        x_offset: 0
+        y_offset: 0
+        z_offset: 0
+      unity:
+        x_offset: 0
+        y_offset: 0
+        z_offset: 0
