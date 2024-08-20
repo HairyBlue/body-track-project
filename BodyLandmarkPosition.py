@@ -1,12 +1,10 @@
 import math
 from config import svc_configs
-
-from config import svc_configs
+import traceback
 
 configs = svc_configs()
 default_settings  = configs["default"]["settings"]
-
-position_settings = default_settings["position"]
+offsets_settings = configs["offsets"]["settings"]
 
 class BodyLandmarkPosition:
     def __init__(self, landmarks, mp_pose, cv2, image):
@@ -14,6 +12,38 @@ class BodyLandmarkPosition:
         self.mp_pose = mp_pose
         self.cv2 = cv2
         self.image = image
+
+    def image_shape(self):
+        image_height, image_width, _ = self.image.shape
+        return image_height, image_width
+    
+    def determine_aspect_ratio(self):
+        image_height, image_width = self.image_shape()
+        # landscape_aspect_ratio = image_width / image_height
+        portrait_aspect_ratio = image_height / image_width
+        aspect_ratio = portrait_aspect_ratio
+
+        # Adjust if needed
+        tolerance = 0.1
+
+        main_runner = default_settings["main_runner"]
+        if  main_runner == "debug" or main_runner == "debug_quizz":
+            return "4_by_3"
+        
+        aspect_ratio_list = offsets_settings["aspect_ratio_list"]
+        
+        for aspr in aspect_ratio_list:
+            w, h = aspr.split("_by_")
+            fw = float(w)
+            fh = float(h)
+            
+            if abs(aspect_ratio - (fw / fh)) < tolerance:
+                # remove print for production
+                print(aspr, " => ", [image_height, image_width, aspect_ratio]) 
+                return aspr
+           
+        print("Aspect Ratio Not Identified. [image_height, image_width, aspect_ratio] =>", [image_height, image_width, aspect_ratio])
+        return None
 
     def cv2_circle(self, color=(0, 0, 255), organ_postion=None):
         if organ_postion is not None:
@@ -48,16 +78,16 @@ class BodyLandmarkPosition:
         return landmark if 0 <= landmark[0] <= 1 and 0 <= landmark[1] <= 1 else None
     
     def calculate_organ_position(self, center1, center2, x_offset=0, y_offset=0):
-        image_height, image_width, _ = self.image.shape
-        x = int(center1[0] * image_width) + x_offset
-        y = int((center1[1] + (center2[1] - center1[1]) ) * image_height + y_offset)
+        image_height, image_width = self.image_shape()
         z = int(center1[2] * image_width)
-
+        x = int(center1[0] * image_width) + x_offset
+        y = int((center1[1] + (center2[1] - center1[1]) ) * image_height + y_offset) + z
+        
         self.cv2_circle(organ_postion=(x, y, z))
         return x, y, z
 
     def calculate_unity_coordinates(self, center, x_offset=0, y_offset=0, z_offset=0):
-        image_height, image_width, _ = self.image.shape
+        image_height, image_width = self.image_shape()
 
         normalized_x = center[0]
         normalized_y = 1 - center[1]  # Inverting y-coordinate
@@ -74,12 +104,12 @@ class BodyLandmarkPosition:
     
         return position_dict
     
-    def validate_landmarks_list(self, landmark_list):
-        if len(landmark_list) == 33:
-            print("Validation passed: 33 landmarks found.")
+    def validate_landmarks_list(self, landmarks_list):
+        if len(landmarks_list) == 33:
+            # print("Validation passed: 33 landmarks found.")
             return True
         else:
-            print(f"Validation failed: {len(landmark_list)} landmarks found.")
+            # print(f"Validation failed: {len(landmarks_list)} landmarks found.")
             return False
     
     def all_unity_coordinates(self, x_offset=0, y_offset=0, z_offset=0):
@@ -91,7 +121,8 @@ class BodyLandmarkPosition:
             for lm in landmarks_list:
                 adjusted_landmark = self.calculate_unity_coordinates(lm, x_offset, y_offset, z_offset)
                 adjusted_landmarks.append(adjusted_landmark)
-                return adjusted_landmarks
+
+            return adjusted_landmarks
         else:
             return None
     
@@ -101,117 +132,137 @@ class HeartPosition(BodyLandmarkPosition):
         super().__init__(landmarks, mp_pose, cv2, image)
 
     def get_position(self):
+        selected_aspect_ratio =  self.determine_aspect_ratio()
+        if selected_aspect_ratio is None:
+            return None
+        
         pair_shoulder = self.landmark_pair('LEFT_SHOULDER', 'RIGHT_SHOULDER')
         pair_hip = self.landmark_pair('LEFT_HIP', 'RIGHT_HIP')
-
         if pair_shoulder is None or pair_hip is None:
             return None
 
         center_shoulder = self.center(pair_shoulder)
         center_hip = self.center(pair_hip)
         
-        offsets = position_settings["heart"]
-        offset_command = offsets["command"]
+        offsets = offsets_settings["aspect_ratio"][selected_aspect_ratio]["heart"]
+        offset_common = offsets["common"]
         offset_unity = offsets["unity"]
 
-        command_position =  self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=offset_command["x_offset"], y_offset=offset_command["y_offset"])
+        common_position =  self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=offset_common["x_offset"], y_offset=offset_common["y_offset"])
         unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"])
-        return command_position, unity_position
+        return common_position, unity_position
 
 class BrainPosition(BodyLandmarkPosition):
     def __init__(self, landmarks, mp_pose, cv2, image):
         super().__init__(landmarks, mp_pose, cv2, image)
 
     def get_position(self):
+        selected_aspect_ratio =  self.determine_aspect_ratio()
+        if selected_aspect_ratio is None:
+            return None
+               
         nose = self.get_landmark('NOSE')
         pair_ear = self.landmark_pair('LEFT_EAR', 'RIGHT_EAR')  
-
         if pair_ear is None or nose is None:
             return None 
         
         center_ear = self.center(pair_ear)
         
-        offsets = position_settings["brain"]
-        offset_command = offsets["command"]
+        offsets = offsets_settings["aspect_ratio"][selected_aspect_ratio]["brain"]
+        offset_common = offsets["common"]
         offset_unity = offsets["unity"]
 
-        command_position = self.calculate_organ_position(center1=center_ear, center2=nose, x_offset=offset_command["x_offset"], y_offset=offset_command["y_offset"])
+        common_position = self.calculate_organ_position(center1=center_ear, center2=nose, x_offset=offset_common["x_offset"], y_offset=offset_common["y_offset"])
         unity_position = self.calculate_unity_coordinates(center=center_ear, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"])
-        return command_position, unity_position
+        return common_position, unity_position
 
 class LiverPosition(BodyLandmarkPosition):
     def __init__(self, landmarks, mp_pose, cv2, image):
         super().__init__(landmarks, mp_pose, cv2, image)
 
     def get_position(self):
+        selected_aspect_ratio =  self.determine_aspect_ratio()
+        if selected_aspect_ratio is None:
+            return None
+        
         pair_shoulder = self.landmark_pair('LEFT_SHOULDER', 'RIGHT_SHOULDER')
         pair_hip = self.landmark_pair('LEFT_HIP', 'RIGHT_HIP')
-
         if pair_shoulder is None or pair_hip is None:
             return None
 
         center_shoulder = self.center(pair_shoulder)
         center_hip = self.center(pair_hip)
 
-        offsets = position_settings["liver"]
-        offset_command = offsets["command"]
+        offsets = offsets_settings["aspect_ratio"][selected_aspect_ratio]["liver"]
+        offset_common = offsets["common"]
         offset_unity = offsets["unity"]
 
-        command_position = self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=offset_command["x_offset"], y_offset=offset_command["y_offset"])
+        common_position = self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=offset_common["x_offset"], y_offset=offset_common["y_offset"])
         unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"])
-        return command_position, unity_position
+        return common_position, unity_position
     
 class StomachPosition(BodyLandmarkPosition):
     def __init__(self, landmarks, mp_pose, cv2, image):
         super().__init__(landmarks, mp_pose, cv2, image)
 
     def get_position(self):
+        selected_aspect_ratio =  self.determine_aspect_ratio()
+        if selected_aspect_ratio is None:
+            return None
+        
         pair_shoulder = self.landmark_pair('LEFT_SHOULDER', 'RIGHT_SHOULDER')
         pair_hip = self.landmark_pair('LEFT_HIP', 'RIGHT_HIP')
-
         if pair_shoulder is None or pair_hip is None:
             return None 
 
         center_shoulder = self.center(pair_shoulder)
         center_hip = self.center(pair_hip)
 
-        offsets = position_settings["stomach"]
-        offset_command = offsets["command"]
+        offsets = offsets_settings["aspect_ratio"][selected_aspect_ratio]["stomach"]
+        offset_common = offsets["common"]
         offset_unity = offsets["unity"]
 
-        command_position = self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=offset_command["x_offset"], y_offset=offset_command["y_offset"])
+        common_position = self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=offset_common["x_offset"], y_offset=offset_common["y_offset"])
         unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"])
-        return command_position, unity_position
+        return common_position, unity_position
 
 class IntestinePosition(BodyLandmarkPosition):
     def __init__(self, landmarks, mp_pose, cv2, image):
         super().__init__(landmarks, mp_pose, cv2, image)
 
     def get_position(self):
+        selected_aspect_ratio =  self.determine_aspect_ratio()
+        if selected_aspect_ratio is None:
+            return None
+        
         pair_shoulder = self.landmark_pair('LEFT_SHOULDER', 'RIGHT_SHOULDER')
         pair_hip = self.landmark_pair('LEFT_HIP', 'RIGHT_HIP')
-
         if pair_shoulder is None or pair_hip is None:
             return None
 
         center_shoulder = self.center(pair_shoulder)
         center_hip = self.center(pair_hip)
 
-        offsets = position_settings["intestine"]
-        offset_command = offsets["command"]
+        offsets = offsets_settings["aspect_ratio"][selected_aspect_ratio]["intestine"]
+        offset_common = offsets["common"]
         offset_unity = offsets["unity"]
 
-        command_position = self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=offset_command["x_offset"], y_offset=offset_command["y_offset"])
+        common_position = self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=offset_common["x_offset"], y_offset=offset_common["y_offset"])
         unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"])
-        return command_position, unity_position
-    
+        return common_position, unity_position
+
+
+# Calculate all body landmark  
 class BodyPosition(BodyLandmarkPosition):
     def __init__(self, landmarks, mp_pose, cv2, image):
         super().__init__(landmarks, mp_pose, cv2, image)
 
     def get_position(self):
+        selected_aspect_ratio =  self.determine_aspect_ratio()
+        if selected_aspect_ratio is None:
+            return None        
 
-        offsets = position_settings["body"]
+        offsets = offsets_settings["aspect_ratio"][selected_aspect_ratio]["body"]
         offset_unity = offsets["unity"]
     
         all_unity_position = self.all_unity_coordinates(x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"])
@@ -219,14 +270,46 @@ class BodyPosition(BodyLandmarkPosition):
         if all_unity_position is None:
             return None
         
-        return None, all_unity_position
+        selected_indices  = default_settings["selected_marks"]["body"]
+        selected_landmarks  = [all_unity_position[i] for i in selected_indices]
+
+        return None, selected_landmarks
+
+# Only Calculate the selected body landmark
+class BodyPositionV2(BodyLandmarkPosition):
+    def __init__(self, landmarks, mp_pose, cv2, image):
+        super().__init__(landmarks, mp_pose, cv2, image)
+
+    def get_position(self):
+        selected_position = []
+
+        selected_aspect_ratio =  self.determine_aspect_ratio()
+        if selected_aspect_ratio is None:
+            return None  
+        
+        offsets = offsets_settings["aspect_ratio"][selected_aspect_ratio]["body"]
+        offset_unity = offsets["unity"]
+
+        selected_body_marks = default_settings["selected_marks"]["body_v2"]
+
+        landmarks_list = self.landmark_list()
+
+        if self.validate_landmarks_list(landmarks_list=landmarks_list):
+            for i in selected_body_marks:
+                landmark = self.get_landmark(i)
+                if landmark:
+                    position_dict = self.calculate_unity_coordinates(landmark, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"])
+                    selected_position.append(position_dict)
+        
+        return None, selected_position
 
 
+    
 def calculate_position(organ_type, landmarks, mp_pose, cv2, image):
     if organ_type == 'heart':
         try:
             organ = HeartPosition(landmarks=landmarks, mp_pose=mp_pose, cv2=cv2, image=image)
-            command_position, unity_position = organ.get_position()
+            common_position, unity_position = organ.get_position()
 
             if unity_position is None:
                 print("Need Proper Position, this will send back to the client if possible")
@@ -237,7 +320,7 @@ def calculate_position(organ_type, landmarks, mp_pose, cv2, image):
     if organ_type == 'brain':
         try:
             organ = BrainPosition(landmarks=landmarks, mp_pose=mp_pose, cv2=cv2, image=image)
-            command_position, unity_position = organ.get_position()
+            common_position, unity_position = organ.get_position()
 
             if unity_position is None:
                 print("Need Proper Position, this will send back to the client if possible")
@@ -248,7 +331,7 @@ def calculate_position(organ_type, landmarks, mp_pose, cv2, image):
     if organ_type == 'liver':
         try:
             organ = LiverPosition(landmarks=landmarks, mp_pose=mp_pose, cv2=cv2, image=image)
-            command_position, unity_position = organ.get_position()
+            common_position, unity_position = organ.get_position()
 
             if unity_position is None:
                 print("Need Proper Position, this will send back to the client if possible")
@@ -259,7 +342,7 @@ def calculate_position(organ_type, landmarks, mp_pose, cv2, image):
     if organ_type == 'stomach':
         try:
             organ = StomachPosition(landmarks=landmarks, mp_pose=mp_pose, cv2=cv2, image=image)
-            command_position, unity_position = organ.get_position()
+            common_position, unity_position = organ.get_position()
 
             if unity_position is None:
                 print("Need Proper Position, this will send back to the client if possible")
@@ -269,7 +352,7 @@ def calculate_position(organ_type, landmarks, mp_pose, cv2, image):
     if organ_type == 'intestine':
         try:
             organ = IntestinePosition(landmarks=landmarks, mp_pose=mp_pose, cv2=cv2, image=image)
-            command_position, unity_position = organ.get_position()
+            common_position, unity_position = organ.get_position()
 
             if unity_position is None:
                 print("Need Proper Position, this will send back to the client if possible")
@@ -285,6 +368,7 @@ def calculate_position_v2(oType, args):
             stomach =  StomachPosition
             intestine = IntestinePosition
             body = BodyPosition
+            # body_v2 = BodyPositionV2
 
             organs = {
                 'heart': heart,
@@ -298,4 +382,5 @@ def calculate_position_v2(oType, args):
             organ_cls = organs[oType]
             return organ_cls(**args).get_position()
         except Exception as e:
-            print("Unable to calculate organ position either not in the dictionary or misspelled orgname ",  e)
+            print("Unable to calculate organ position => ",  e)
+            traceback.print_exc()

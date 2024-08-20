@@ -1,5 +1,4 @@
 settings:
-
   mp:
     pose:
       static_image_mode: False
@@ -15,63 +14,19 @@ settings:
       min_detection_confidence: 0.5
       min_tracking_confidence: 0.5
 
-  position:
-    heart:
-      command:
-        x_offset: 0
-        y_offset: -200
-        z_offset: 0
-      unity:
-        x_offset: 0
-        y_offset: -1.5
-        z_offset: 15 
-
-    brain:
-      command:
-        x_offset: 0
-        y_offset: -50
-        z_offset: 0
-      unity:
-        x_offset: 0
-        y_offset: 1.2
-        z_offset: 4
-
-    liver:
-      command:
-        x_offset: -35
-        y_offset: -150
-        z_offset: 0
-      unity:
-        x_offset: -0.8
-        y_offset: -2
-        z_offset: 4
-
-    stomach:
-      command:
-        x_offset: 30
-        y_offset: -145
-        z_offset: 0
-      unity:
-        x_offset: 0.85
-        y_offset: -2.5
-        z_offset: 4
-
-    intestine:
-      command:
-        x_offset: 0
-        y_offset: -100
-        z_offset: 0
-      unity:
-        x_offset: 0
-        y_offset: -2.8
-        z_offset: 4
-
-    body:
-      command:
-        x_offset: 0
-        y_offset: 0
-        z_offset: 0
-      unity:
-        x_offset: 0
-        y_offset: 0
-        z_offset: 0
+  selected_marks:
+    body: [0, 12, 14, 16, 11, 13, 15, 20, 28, 25, 27]
+    body_v2:
+      [
+        "NOSE",
+        "LEFT_SHOULDER",
+        "LEFT_ELBOW",
+        "LEFT_WRIST",
+        "RIGHT_SHOULDER",
+        "RIGHT_ELBOW",
+        "RIGHT_WRIST",
+        "LEFT_INDEX",
+        "LEFT_ANKLE",
+        "RIGHT_HIP",
+        "RIGHT_KNEE",
+      ]

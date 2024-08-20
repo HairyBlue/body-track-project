@@ -1,0 +1,509 @@
+settings:
+  aspect_ratio_list:
+    [
+      "16_by_9",
+      "18_by_9",
+      "19_by_9",
+      "19.5_by_9",
+      "20_by_9",
+      "21_by_9",
+      "22_by_9",
+      "4_by_3",
+    ]
+
+  aspect_ratio:
+    # 4:3  probably webcam for debug
+    4_by_3:
+      heart:
+        common:
+          x_offset: 0
+          y_offset: -1.5
+          z_offset: 4
+        unity:
+          x_offset: 0
+          y_offset: -1.5
+          z_offset: 15
+
+      brain:
+        common:
+          x_offset: 0
+          y_offset: 1.2
+          z_offset: 4
+        unity:
+          x_offset: 0
+          y_offset: 1.2
+          z_offset: 4
+
+      liver:
+        common:
+          x_offset: -0.8
+          y_offset: -2
+          z_offset: 4
+        unity:
+          x_offset: -0.8
+          y_offset: -2
+          z_offset: 4
+
+      stomach:
+        common:
+          x_offset: 0.85
+          y_offset: -2.5
+          z_offset: 4
+        unity:
+          x_offset: 0.85
+          y_offset: -2.5
+          z_offset: 4
+
+      intestine:
+        common:
+          x_offset: 0
+          y_offset: -2.8
+          z_offset: 4
+        unity:
+          x_offset: 0
+          y_offset: -2.8
+          z_offset: 4
+
+      body:
+        common:
+          x_offset: 0
+          y_offset: 0
+          z_offset: 0
+        unity:
+          x_offset: 0
+          y_offset: 0
+          z_offset: 4
+
+    # 16:9
+    16_by_9:
+      heart:
+        common:
+          x_offset: 0
+          y_offset: -10
+          z_offset: 4
+        unity:
+          x_offset: 0
+          y_offset: -1.5
+          z_offset: 15
+
+      brain:
+        common:
+          x_offset: 0
+          y_offset: 1.2
+          z_offset: 4
+        unity:
+          x_offset: 0
+          y_offset: 1.2
+          z_offset: 4
+
+      liver:
+        common:
+          x_offset: -0.8
+          y_offset: -2
+          z_offset: 4
+        unity:
+          x_offset: -0.8
+          y_offset: -2
+          z_offset: 4
+
+      stomach:
+        common:
+          x_offset: 0.85
+          y_offset: -2.5
+          z_offset: 4
+        unity:
+          x_offset: 0.85
+          y_offset: -2.5
+          z_offset: 4
+
+      intestine:
+        common:
+          x_offset: 0
+          y_offset: -2.8
+          z_offset: 4
+        unity:
+          x_offset: 0
+          y_offset: -2.8
+          z_offset: 4
+
+      body:
+        common:
+          x_offset: 0
+          y_offset: 0
+          z_offset: 0
+        unity:
+          x_offset: 0
+          y_offset: 0
+          z_offset: 4
+
+    # 18:9
+    18_by_9:
+      heart:
+        common:
+          x_offset: 0
+          y_offset: -1.5
+          z_offset: 15
+        unity:
+          x_offset: 0
+          y_offset: -1.5
+          z_offset: 15
+
+      brain:
+        common:
+          x_offset: 0
+          y_offset: 1.2
+          z_offset: 4
+        unity:
+          x_offset: 0
+          y_offset: 1.2
+          z_offset: 4
+
+      liver:
+        common:
+          x_offset: -0.8
+          y_offset: -2
+          z_offset: 4
+        unity:
+          x_offset: -0.8
+          y_offset: -2
+          z_offset: 4
+
+      stomach:
+        common:
+          x_offset: 0.85
+          y_offset: -2.5
+          z_offset: 4
+        unity:
+          x_offset: 0.85
+          y_offset: -2.5
+          z_offset: 4
+
+      intestine:
+        common:
+          x_offset: 0
+          y_offset: -2.8
+          z_offset: 4
+        unity:
+          x_offset: 0
+          y_offset: -2.8
+          z_offset: 4
+
+      body:
+        common:
+          x_offset: 0
+          y_offset: 0
+          z_offset: 0
+        unity:
+          x_offset: 0
+          y_offset: 0
+          z_offset: 4
+
+    # 19:9
+    19_by_9:
+      heart:
+        common:
+          x_offset: 0
+          y_offset: -200
+          z_offset: 0
+        unity:
+          x_offset: 0
+          y_offset: -1.5
+          z_offset: 15
+
+      brain:
+        common:
+          x_offset: 0
+          y_offset: -50
+          z_offset: 0
+        unity:
+          x_offset: 0
+          y_offset: 1.2
+          z_offset: 4
+
+      liver:
+        common:
+          x_offset: -35
+          y_offset: -150
+          z_offset: 0
+        unity:
+          x_offset: -0.8
+          y_offset: -2
+          z_offset: 4
+
+      stomach:
+        common:
+          x_offset: 30
+          y_offset: -145
+          z_offset: 0
+        unity:
+          x_offset: 0.85
+          y_offset: -2.5
+          z_offset: 4
+
+      intestine:
+        common:
+          x_offset: 0
+          y_offset: -100
+          z_offset: 0
+        unity:
+          x_offset: 0
+          y_offset: -2.8
+          z_offset: 4
+
+      body:
+        common:
+          x_offset: 0
+          y_offset: 0
+          z_offset: 0
+        unity:
+          x_offset: 0
+          y_offset: 0
+          z_offset: 4
+
+    # 19.5:9
+    19.5_by_9:
+      heart:
+        common:
+          x_offset: 0
+          y_offset: -200
+          z_offset: 0
+        unity:
+          x_offset: 0
+          y_offset: -1.5
+          z_offset: 15
+
+      brain:
+        common:
+          x_offset: 0
+          y_offset: -50
+          z_offset: 0
+        unity:
+          x_offset: 0
+          y_offset: 1.2
+          z_offset: 4
+
+      liver:
+        common:
+          x_offset: -35
+          y_offset: -150
+          z_offset: 0
+        unity:
+          x_offset: -0.8
+          y_offset: -2
+          z_offset: 4
+
+      stomach:
+        common:
+          x_offset: 30
+          y_offset: -145
+          z_offset: 0
+        unity:
+          x_offset: 0.85
+          y_offset: -2.5
+          z_offset: 4
+
+      intestine:
+        common:
+          x_offset: 0
+          y_offset: -100
+          z_offset: 0
+        unity:
+          x_offset: 0
+          y_offset: -2.8
+          z_offset: 4
+
+      body:
+        common:
+          x_offset: 0
+          y_offset: 0
+          z_offset: 0
+        unity:
+          x_offset: 0
+          y_offset: 0
+          z_offset: 4
+
+    # 20:9
+    20_by_9:
+      heart:
+        common:
+          x_offset: 0
+          y_offset: -200
+          z_offset: 0
+        unity:
+          x_offset: 0
+          y_offset: -1.5
+          z_offset: 15
+
+      brain:
+        common:
+          x_offset: 0
+          y_offset: -50
+          z_offset: 0
+        unity:
+          x_offset: 0
+          y_offset: 1.2
+          z_offset: 4
+
+      liver:
+        common:
+          x_offset: -35
+          y_offset: -150
+          z_offset: 0
+        unity:
+          x_offset: -0.8
+          y_offset: -2
+          z_offset: 4
+
+      stomach:
+        common:
+          x_offset: 30
+          y_offset: -145
+          z_offset: 0
+        unity:
+          x_offset: 0.85
+          y_offset: -2.5
+          z_offset: 4
+
+      intestine:
+        common:
+          x_offset: 0
+          y_offset: -100
+          z_offset: 0
+        unity:
+          x_offset: 0
+          y_offset: -2.8
+          z_offset: 4
+
+      body:
+        common:
+          x_offset: 0
+          y_offset: 0
+          z_offset: 0
+        unity:
+          x_offset: 0
+          y_offset: 0
+          z_offset: 4
+
+    # 21:9
+    21_by_9:
+      heart:
+        common:
+          x_offset: 0
+          y_offset: -200
+          z_offset: 0
+        unity:
+          x_offset: 0
+          y_offset: -1.5
+          z_offset: 15
+
+      brain:
+        common:
+          x_offset: 0
+          y_offset: -50
+          z_offset: 0
+        unity:
+          x_offset: 0
+          y_offset: 1.2
+          z_offset: 4
+
+      liver:
+        common:
+          x_offset: -35
+          y_offset: -150
+          z_offset: 0
+        unity:
+          x_offset: -0.8
+          y_offset: -2
+          z_offset: 4
+
+      stomach:
+        common:
+          x_offset: 30
+          y_offset: -145
+          z_offset: 0
+        unity:
+          x_offset: 0.85
+          y_offset: -2.5
+          z_offset: 4
+
+      intestine:
+        common:
+          x_offset: 0
+          y_offset: -100
+          z_offset: 0
+        unity:
+          x_offset: 0
+          y_offset: -2.8
+          z_offset: 4
+
+      body:
+        common:
+          x_offset: 0
+          y_offset: 0
+          z_offset: 0
+        unity:
+          x_offset: 0
+          y_offset: 0
+          z_offset: 4
+
+    # 22:9
+    22_by_9:
+      heart:
+        common:
+          x_offset: 0
+          y_offset: -200
+          z_offset: 0
+        unity:
+          x_offset: 0
+          y_offset: -1.5
+          z_offset: 15
+
+      brain:
+        common:
+          x_offset: 0
+          y_offset: -50
+          z_offset: 0
+        unity:
+          x_offset: 0
+          y_offset: 1.2
+          z_offset: 4
+
+      liver:
+        common:
+          x_offset: -35
+          y_offset: -150
+          z_offset: 0
+        unity:
+          x_offset: -0.8
+          y_offset: -2
+          z_offset: 4
+
+      stomach:
+        common:
+          x_offset: 30
+          y_offset: -145
+          z_offset: 0
+        unity:
+          x_offset: 0.85
+          y_offset: -2.5
+          z_offset: 4
+
+      intestine:
+        common:
+          x_offset: 0
+          y_offset: -100
+          z_offset: 0
+        unity:
+          x_offset: 0
+          y_offset: -2.8
+          z_offset: 4
+
+      body:
+        common:
+          x_offset: 0
+          y_offset: 0
+          z_offset: 0
+        unity:
+          x_offset: 0
+          y_offset: 0
+          z_offset: 4

@@ -279,7 +279,13 @@ def debug_feed():
             start_time = time.time()
 
             ret, frame = cap.read()
-            image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+            adjustedFrame = frame
+
+            if default_settings["adjust_orientation"]:
+                adjustedFrame = adjust_orientation(frame=frame);
+            
+            image = cv2.cvtColor(adjustedFrame, cv2.COLOR_BGR2RGB)
             image.flags.writeable = False
 
             pose_results = pose.process(image)
@@ -312,7 +318,7 @@ def debug_feed():
                     results =  calculate_position_v2(debug_organ, args)
                     
                     if results is not None:
-                        command_position, unity_position = results
+                        common_position, unity_position = results
                         end_time = time.time()
                         calc_time_and_log(topic='debug_unity_position', start_time=start_time, end_time=end_time)
 
@@ -369,7 +375,7 @@ def debug_quizz():
     cv2.destroyAllWindows()  
 
 def main():
-    print("CONFIGS  => ", configs)
+    print("Default settings  => ", configs["default"])
 
     if main_runner == "unity":
         asyncio.run(unity_stream())

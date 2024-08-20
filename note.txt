@@ -1,9 +1,24 @@
-Continuous Adjustment for center position if using actual device on mobile
+Continuous Adjustment for offsets based on aspect ratio
 
 Logs
    - time frame between the start and end of calculation of position.
    - log quiz result, distanse between finger and organ position
-   - log quizz result for user, in unity or here. depends 
+   - log quizz result for user, in unity or here. it depends 
 
 Hand Tracking for gesture control for quizz
 GUI APP if necessary
+
+remove print for production at  determine_aspect_ratio()
+print(aspr, " => ", [image_height, image_width, aspect_ratio])
+
+cached the config to avoid O(N) problem of reading yaml file
+
+
+Functions:
+   pose_landmark
+   hands_landmark
+   logging
+   tcp socket connection, frame and json
+   queueing for connected user
+   organ positioning for unity and common points
+   quizz combination of pose_landmark and hands_landmark

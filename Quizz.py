@@ -4,7 +4,7 @@ from BodyLandmarkPosition import BodyLandmarkPosition, calculate_position_v2
 quizzStarted = False
 organs = ['heart', 'brain', 'liver', 'stomach', 'intestine']
 
-class GestureCommand(BodyLandmarkPosition):
+class GestureCommon(BodyLandmarkPosition):
     def __init__(self, landmarks, mp_pose, cv2, image):
         super().__init__(landmarks, mp_pose, cv2, image)
 
@@ -114,10 +114,10 @@ class HandLandmarkPostion:
 
 def start_quiz(args, args2):
     global quizzStarted
-    command = GestureCommand(**args)
+    common = GestureCommon(**args)
 
-    hands_up = command.check_hands_up()
-    crossed_arm = command.check_crossed_arms()
+    hands_up = common.check_hands_up()
+    crossed_arm = common.check_crossed_arms()
 
     if quizzStarted == True:
         if crossed_arm is not None:
@@ -133,5 +133,5 @@ def start_quiz(args, args2):
         for organ in organs:
             results = calculate_position_v2(organ, args)
             if results is not None:
-                command_position, unity_position = results
-                command.calculate_chosen_organ(organ, command_position, None)
+                common_position, unity_position = results
+                common.calculate_chosen_organ(organ, common_position, None)
