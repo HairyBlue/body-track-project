@@ -16,169 +16,169 @@ settings:
     # # operator  => subtraction or addition 
     # #
     # # 4:3  probably webcam for debug ====================================================================================================
-    4_by_3:
-      heart:
-        common:
-          x_offset: 0
-          y_offset: -175
-          z_offset: 4
-        unity:
-          x_offset: 0
-          y_offset: -1.5
-          z_offset: 22
-        calibration:
-          minumum: 10.20
-          maximum: 19.80
-          y_offset:
-            enable: True
-            operator: "subtraction"
-            common: 15
-            unity: 0.15
-          x_offset:
-            enable: False
-            operator: "subtraction"
-            common: 0
-            unity: 0
-          z_offset:
-            enable: True
-            operator: "subtraction"
-            common: 0
-            unity: 0.75
-      brain:
-        common:
-          x_offset: 0
-          y_offset: 1.2
-          z_offset: 4
-        unity:
-          x_offset: 0
-          y_offset: 1.2
-          z_offset: 4
-        calibration:
-          minumum: 10.20
-          maximum: 19.80
-          y_offset:
-            enable: False
-            operator: "subtraction"
-            common: 0
-            unity: 0
-          x_offset:
-            enable: False
-            operator: "subtraction"
-            common: 0
-            unity: 0
-          z_offset:
-            enable: True
-            operator: "subtraction"
-            common: 0
-            unity: 0.75
-      liver:
-        common:
-          x_offset: -0.8
-          y_offset: -2
-          z_offset: 4
-        unity:
-          x_offset: -0.8
-          y_offset: -2
-          z_offset: 4
-        calibration:
-          minumum: 10.20
-          maximum: 19.80
-          y_offset:
-            enable: False
-            operator: "subtraction"
-            common: 0
-            unity: 0
-          x_offset:
-            enable: False
-            operator: "subtraction"
-            common: 0
-            unity: 0
-          z_offset:
-            enable: True
-            operator: "subtraction"
-            common: 0
-            unity: 0.75
-      stomach:
-        common:
-          x_offset: 0.85
-          y_offset: -2.5
-          z_offset: 4
-        unity:
-          x_offset: 0.85
-          y_offset: -2.5
-          z_offset: 4
-        calibration:
-          minumum: 10.20
-          maximum: 19.80
-          y_offset:
-            enable: False
-            operator: "subtraction"
-            common: 0
-            unity: 0
-          x_offset:
-            enable: False
-            operator: "subtraction"
-            common: 0
-            unity: 0
-          z_offset:
-            enable: True
-            operator: "subtraction"
-            common: 0
-            unity: 0.75
-      intestine:
-        common:
-          x_offset: 0
-          y_offset: -2.8
-          z_offset: 4
-        unity:
-          x_offset: 0
-          y_offset: -2.8
-          z_offset: 4
-        calibration:
-          minumum: 10.20
-          maximum: 19.80
-          y_offset:
-            enable: False
-            operator: "subtraction"
-            common: 0
-            unity: 0
-          x_offset:
-            enable: False
-            operator: "subtraction"
-            common: 0
-            unity: 0
-          z_offset:
-            enable: True
-            operator: "subtraction"
-            common: 0
-            unity: 0.75
-      body:
-        common:
-          x_offset: 0
-          y_offset: 0
-          z_offset: 0
-        unity:
-          x_offset: 0
-          y_offset: 0
-          z_offset: 4
-        calibration:
-          minumum: 10.20
-          maximum: 19.80
-          y_offset:
-            enable: False
-            operator: "subtraction"
-            common: 0
-            unity: 0
-          x_offset:
-            enable: False
-            operator: "subtraction"
-            common: 0
-            unity: 0
-          z_offset:
-            enable: True
-            operator: "subtraction"
-            common: 0
-            unity: 0.75
+    # 4_by_3:
+    #   heart:
+    #     common:
+    #       x_offset: 0
+    #       y_offset: -175
+    #       z_offset: 4
+    #     unity:
+    #       x_offset: 0
+    #       y_offset: -1.5
+    #       z_offset: 22
+    #     calibration:
+    #       minumum: 10.20
+    #       maximum: 19.80
+    #       y_offset:
+    #         enable: True
+    #         operator: "subtraction"
+    #         common: 15
+    #         unity: 0.15
+    #       x_offset:
+    #         enable: False
+    #         operator: "subtraction"
+    #         common: 0
+    #         unity: 0
+    #       z_offset:
+    #         enable: True
+    #         operator: "subtraction"
+    #         common: 0
+    #         unity: 0.75
+    #   brain:
+    #     common:
+    #       x_offset: 0
+    #       y_offset: 1.2
+    #       z_offset: 4
+    #     unity:
+    #       x_offset: 0
+    #       y_offset: 1.2
+    #       z_offset: 4
+    #     calibration:
+    #       minumum: 10.20
+    #       maximum: 19.80
+    #       y_offset:
+    #         enable: False
+    #         operator: "subtraction"
+    #         common: 0
+    #         unity: 0
+    #       x_offset:
+    #         enable: False
+    #         operator: "subtraction"
+    #         common: 0
+    #         unity: 0
+    #       z_offset:
+    #         enable: True
+    #         operator: "subtraction"
+    #         common: 0
+    #         unity: 0.75
+    #   liver:
+    #     common:
+    #       x_offset: -0.8
+    #       y_offset: -2
+    #       z_offset: 4
+    #     unity:
+    #       x_offset: -0.8
+    #       y_offset: -2
+    #       z_offset: 4
+    #     calibration:
+    #       minumum: 10.20
+    #       maximum: 19.80
+    #       y_offset:
+    #         enable: False
+    #         operator: "subtraction"
+    #         common: 0
+    #         unity: 0
+    #       x_offset:
+    #         enable: False
+    #         operator: "subtraction"
+    #         common: 0
+    #         unity: 0
+    #       z_offset:
+    #         enable: True
+    #         operator: "subtraction"
+    #         common: 0
+    #         unity: 0.75
+    #   stomach:
+    #     common:
+    #       x_offset: 0.85
+    #       y_offset: -2.5
+    #       z_offset: 4
+    #     unity:
+    #       x_offset: 0.85
+    #       y_offset: -2.5
+    #       z_offset: 4
+    #     calibration:
+    #       minumum: 10.20
+    #       maximum: 19.80
+    #       y_offset:
+    #         enable: False
+    #         operator: "subtraction"
+    #         common: 0
+    #         unity: 0
+    #       x_offset:
+    #         enable: False
+    #         operator: "subtraction"
+    #         common: 0
+    #         unity: 0
+    #       z_offset:
+    #         enable: True
+    #         operator: "subtraction"
+    #         common: 0
+    #         unity: 0.75
+    #   intestine:
+    #     common:
+    #       x_offset: 0
+    #       y_offset: -2.8
+    #       z_offset: 4
+    #     unity:
+    #       x_offset: 0
+    #       y_offset: -2.8
+    #       z_offset: 4
+    #     calibration:
+    #       minumum: 10.20
+    #       maximum: 19.80
+    #       y_offset:
+    #         enable: False
+    #         operator: "subtraction"
+    #         common: 0
+    #         unity: 0
+    #       x_offset:
+    #         enable: False
+    #         operator: "subtraction"
+    #         common: 0
+    #         unity: 0
+    #       z_offset:
+    #         enable: True
+    #         operator: "subtraction"
+    #         common: 0
+    #         unity: 0.75
+    #   body:
+    #     common:
+    #       x_offset: 0
+    #       y_offset: 0
+    #       z_offset: 0
+    #     unity:
+    #       x_offset: 0
+    #       y_offset: 0
+    #       z_offset: 4
+    #     calibration:
+    #       minumum: 10.20
+    #       maximum: 19.80
+    #       y_offset:
+    #         enable: False
+    #         operator: "subtraction"
+    #         common: 0
+    #         unity: 0
+    #       x_offset:
+    #         enable: False
+    #         operator: "subtraction"
+    #         common: 0
+    #         unity: 0
+    #       z_offset:
+    #         enable: True
+    #         operator: "subtraction"
+    #         common: 0
+    #         unity: 0.75
 
     # 16:9 ====================================================================================================
     16_by_9:
