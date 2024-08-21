@@ -97,7 +97,7 @@ class BodyLandmarkPosition:
                         continue
                     
                     operator = offset_calibration[offset]["operator"]
-                    offset_additional = (estimate_distance - offset_calibration["minumum"]) * offset_calibration[offset]["common"]
+                    offset_additional = (estimate_distance - offset_calibration["minimum"]) * offset_calibration[offset]["common"]
                     
                     if operator == "subtraction":
                         offset_additional_stored.append(-offset_additional)
@@ -144,7 +144,7 @@ class BodyLandmarkPosition:
                         continue
                     
                     operator = offset_calibration[offset]["operator"]
-                    offset_additional = (estimate_distance - offset_calibration["minumum"]) * offset_calibration[offset]["unity"]
+                    offset_additional = (estimate_distance - offset_calibration["minimum"]) * offset_calibration[offset]["unity"]
                     
                     if operator == "subtraction":
                         offset_additional_stored.append(-offset_additional)
@@ -223,7 +223,7 @@ class BodyLandmarkPosition:
             calibration = self.calibrate_distance(height_pixels, known_height_pixels, known_height_meters)
 
             # print(calibration)
-            if calibration > offset_calibration["minumun"] and calibration < offset_calibration["maximum"]: 
+            if calibration > offset_calibration["minimum"] and calibration < offset_calibration["maximum"]: 
                 return calibration
     
             return None

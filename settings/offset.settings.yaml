@@ -1,7 +1,6 @@
 settings:
   # # DISABLE OTHER ASPECT RATIO
-  aspect_ratio_list:
-    [
+  aspect_ratio_list: [
       "16_by_9",
       # "18_by_9",
       # "19_by_9",
@@ -13,7 +12,7 @@ settings:
     ]
 
   aspect_ratio:
-    # # operator  => subtraction or addition 
+    # # operator  => subtraction or addition
     # #
     # # 4:3  probably webcam for debug ====================================================================================================
     # 4_by_3:
@@ -27,7 +26,7 @@ settings:
     #       y_offset: -1.5
     #       z_offset: 22
     #     calibration:
-    #       minumum: 10.20
+    #       minimum: 10.20
     #       maximum: 19.80
     #       y_offset:
     #         enable: True
@@ -54,7 +53,7 @@ settings:
     #       y_offset: 1.2
     #       z_offset: 4
     #     calibration:
-    #       minumum: 10.20
+    #       minimum: 10.20
     #       maximum: 19.80
     #       y_offset:
     #         enable: False
@@ -81,7 +80,7 @@ settings:
     #       y_offset: -2
     #       z_offset: 4
     #     calibration:
-    #       minumum: 10.20
+    #       minimum: 10.20
     #       maximum: 19.80
     #       y_offset:
     #         enable: False
@@ -108,7 +107,7 @@ settings:
     #       y_offset: -2.5
     #       z_offset: 4
     #     calibration:
-    #       minumum: 10.20
+    #       minimum: 10.20
     #       maximum: 19.80
     #       y_offset:
     #         enable: False
@@ -135,7 +134,7 @@ settings:
     #       y_offset: -2.8
     #       z_offset: 4
     #     calibration:
-    #       minumum: 10.20
+    #       minimum: 10.20
     #       maximum: 19.80
     #       y_offset:
     #         enable: False
@@ -162,7 +161,7 @@ settings:
     #       y_offset: 0
     #       z_offset: 4
     #     calibration:
-    #       minumum: 10.20
+    #       minimum: 10.20
     #       maximum: 19.80
     #       y_offset:
     #         enable: False
@@ -192,7 +191,7 @@ settings:
           y_offset: -1.5
           z_offset: 22
         calibration:
-          minumum: 10.20
+          minimum: 10.20
           maximum: 19.80
           y_offset:
             enable: True
@@ -220,7 +219,7 @@ settings:
           y_offset: 1.2
           z_offset: 4
         calibration:
-          minumum: 10.20
+          minimum: 10.20
           maximum: 19.80
           y_offset:
             enable: False
@@ -248,7 +247,7 @@ settings:
           y_offset: -2
           z_offset: 4
         calibration:
-          minumum: 10.20
+          minimum: 10.20
           maximum: 19.80
           y_offset:
             enable: False
@@ -276,7 +275,7 @@ settings:
           y_offset: -2.5
           z_offset: 4
         calibration:
-          minumum: 10.20
+          minimum: 10.20
           maximum: 19.80
           y_offset:
             enable: False
@@ -304,7 +303,7 @@ settings:
           y_offset: -2.8
           z_offset: 4
         calibration:
-          minumum: 10.20
+          minimum: 10.20
           maximum: 19.80
           y_offset:
             enable: False
@@ -332,7 +331,7 @@ settings:
           y_offset: 0
           z_offset: 4
         calibration:
-          minumum: 10.20
+          minimum: 10.20
           maximum: 19.80
           y_offset:
             enable: False
@@ -349,7 +348,7 @@ settings:
             operator: "subtraction"
             common: 0
             unity: 0.75
-            
+
     # # DISABLE OTHER ASPECT RATIO
 
     # # 18:9 ====================================================================================================
@@ -539,7 +538,7 @@ settings:
     #       z_offset: 4
 
     # # 20:9 ====================================================================================================
-    # 20_by_9: 
+    # 20_by_9:
     #   heart:
     #     common:
     #       x_offset: 0
