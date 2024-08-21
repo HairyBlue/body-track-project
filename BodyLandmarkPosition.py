@@ -27,10 +27,6 @@ class BodyLandmarkPosition:
         # Adjust if needed
         tolerance = 0.1
 
-        main_runner = default_settings["main_runner"]
-        if  main_runner == "debug" or main_runner == "debug_quizz":
-            return "4_by_3"
-        
         aspect_ratio_list = offsets_settings["aspect_ratio_list"]
         
         for aspr in aspect_ratio_list:
@@ -83,18 +79,53 @@ class BodyLandmarkPosition:
         landmark = landmarks[self.mp_pose.PoseLandmark[landmark_name].value]
         return landmark if 0 <= landmark[0] <= 1 and 0 <= landmark[1] <= 1 else None
     
-    def calculate_organ_position(self, center1, center2, x_offset=0, y_offset=0):
+    def calculate_organ_position(self, center1, center2, x_offset=0, y_offset=0, offset_calibration=None, estimate_distance=None):
         image_height, image_width = self.image_shape()
 
-        x = int(center1[0] * image_width) + x_offset
-        y = int((center1[1] + (center2[1] - center1[1]) ) * image_height) + y_offset
-        z = int(center1[2] * image_width)
-        
+        x = 0
+        y = 0
+        z = 0
+
+        if offset_calibration is not None and estimate_distance is not None:
+            offsets =  ["x_offset", "y_offset"]
+            offset_additional_stored = []
+
+            for offset in offsets:
+                if offset_calibration[offset]:
+                    if not offset_calibration[offset]["enable"]:
+                        offset_additional_stored.append(0)
+                        continue
+                    
+                    operator = offset_calibration[offset]["operator"]
+                    offset_additional = (estimate_distance - offset_calibration["minumum"]) * offset_calibration[offset]["common"]
+                    
+                    if operator == "subtraction":
+                        offset_additional_stored.append(-offset_additional)
+                    if operator == "addition":
+                        offset_additional_stored.append(offset_additional)
+
+            x_offset = x_offset + offset_additional_stored[0]
+            y_offset = y_offset + offset_additional_stored[1]
+
+
+            x = int(center1[0] * image_width) + x_offset
+            y = int((center1[1] + (center2[1] - center1[1]) ) * image_height) + y_offset
+            z = int(center1[2] * image_width)
+        else:
+            # fallback if None
+            x = int(center1[0] * image_width) + x_offset
+            y = int((center1[1] + (center2[1] - center1[1]) ) * image_height) + y_offset
+            z = int(center1[2] * image_width)
+            
         self.cv2_circle(organ_position=(x, y))
         return x, y, z
 
-    def calculate_unity_coordinates(self, center, x_offset=0, y_offset=0, z_offset=0):
+    def calculate_unity_coordinates(self, center, x_offset=0, y_offset=0, z_offset=0, offset_calibration=None, estimate_distance=None):
         image_height, image_width = self.image_shape()
+
+        x_unity_adjusted = 0
+        y_unity_adjusted = 0
+        z_unity_adjusted = 0
 
         normalized_x = center[0]
         normalized_y = 1 - center[1]  # Inverting y-coordinate
@@ -102,9 +133,37 @@ class BodyLandmarkPosition:
         x_unity = (normalized_x - 0.5) * 2
         y_unity = (normalized_y - 0.5) * 2
 
-        x_unity_adjusted = round((x_unity * image_width / 100) + x_offset, 4)
-        y_unity_adjusted = round((y_unity * image_height / 100) + y_offset, 4)
-        z_unity_adjusted = math.floor((((image_width * center[2]) + 3) / 300) + z_offset)
+        if offset_calibration is not None and estimate_distance is not None:
+            offsets =  ["x_offset", "y_offset", "z_offset"]
+            offset_additional_stored = []
+
+            for offset in offsets:
+                if offset_calibration[offset]:
+                    if not offset_calibration[offset]["enable"]:
+                        offset_additional_stored.append(0)
+                        continue
+                    
+                    operator = offset_calibration[offset]["operator"]
+                    offset_additional = (estimate_distance - offset_calibration["minumum"]) * offset_calibration[offset]["unity"]
+                    
+                    if operator == "subtraction":
+                        offset_additional_stored.append(-offset_additional)
+                    if operator == "addition":
+                        offset_additional_stored.append(offset_additional)
+
+            x_offset = x_offset + offset_additional_stored[0]
+            y_offset = y_offset + offset_additional_stored[1]
+            z_offset = z_offset + offset_additional_stored[2]
+
+            x_unity_adjusted = round((x_unity * image_width / 100) + x_offset, 4)
+            y_unity_adjusted = round((y_unity * image_height / 100) + y_offset, 4)
+            z_unity_adjusted = math.floor((((image_width * center[2]) + 3) / 300) + z_offset)
+        else:
+            # fallback if None
+            x_unity_adjusted = round((x_unity * image_width / 100) + x_offset, 4)
+            y_unity_adjusted = round((y_unity * image_height / 100) + y_offset, 4)
+            z_unity_adjusted = math.floor((((image_width * center[2]) + 3) / 300) + z_offset)
+
     
 
         position_dict = { 'x': x_unity_adjusted, 'y': y_unity_adjusted, 'z': z_unity_adjusted }
@@ -119,14 +178,14 @@ class BodyLandmarkPosition:
             # print(f"Validation failed: {len(landmarks_list)} landmarks found.")
             return False
     
-    def all_unity_coordinates(self, x_offset=0, y_offset=0, z_offset=0):
+    def all_unity_coordinates(self, x_offset=0, y_offset=0, z_offset=0, offset_calibration=None, estimate_distance=None):
         adjusted_landmarks = []
 
         landmarks_list = self.landmark_list()
 
         if self.validate_landmarks_list(landmarks_list=landmarks_list):
             for lm in landmarks_list:
-                adjusted_landmark = self.calculate_unity_coordinates(lm, x_offset, y_offset, z_offset)
+                adjusted_landmark = self.calculate_unity_coordinates(lm, x_offset, y_offset, z_offset, offset_calibration, estimate_distance)
                 adjusted_landmarks.append(adjusted_landmark)
 
             return adjusted_landmarks
@@ -138,39 +197,36 @@ class BodyLandmarkPosition:
         x2, y2 = point2
         return np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
-    def pixel_to_meters(self, pixel_distance, known_height_pixels, known_height_meters):
+    def calibrate_distance(self, pixel_distance, known_height_pixels, known_height_meters):
         # Convert pixel distance to real-world distance
         return (pixel_distance / known_height_pixels) * known_height_meters
 
-    def estimate_distance(self):
+    def estimate_distance(self, offset_calibration):
         Nose = self.get_landmark('NOSE')
         pair_foot = self.landmark_pair('LEFT_FOOT_INDEX', 'RIGHT_FOOT_INDEX') 
 
         if Nose and pair_foot:
             center_foot = self.center(pair_foot)
 
-            # Convert normalized coordinates to pixel coordinates
+            # normalized the coordinates to pixel coordinates
             image_height, image_width = self.image.shape[:2]
-            head_top_pixel = (int(Nose[0] * image_width), int(Nose[1] * image_height))
+            nose_pixel = (int(Nose[0] * image_width), int(Nose[1] * image_height))
             foot_pixel = (int(center_foot[0] * image_width), int(center_foot[1] * image_height))
 
-            # Calculate pixel distance
-            height_pixels = self.calculate_pixel_distance(head_top_pixel, foot_pixel)
+            # Calc the pixel distance
+            height_pixels = self.calculate_pixel_distance(nose_pixel, foot_pixel)
             
-            # Calibration data
-            known_height_pixels = 100  # Example height in pixels
-            known_height_meters = 1.75  # Example height in meters
+            # Calibration estimates
+            known_height_pixels = 100
+            known_height_meters = 1.75
 
-            # Convert pixel distance to meters
-            height_meters = self.pixel_to_meters(height_pixels, known_height_pixels, known_height_meters)
+            calibration = self.calibrate_distance(height_pixels, known_height_pixels, known_height_meters)
 
-            # Check if the person is more than 3 meters away
-            div3  = height_meters / 3
-
-            if div3 > 3 and div3 < 5: 
-                print(div3)
-                return True
-            return False
+            # print(calibration)
+            if calibration > offset_calibration["minumun"] and calibration < offset_calibration["maximum"]: 
+                return calibration
+    
+            return None
     
 
 class HeartPosition(BodyLandmarkPosition):
@@ -193,9 +249,14 @@ class HeartPosition(BodyLandmarkPosition):
         offsets = offsets_settings["aspect_ratio"][selected_aspect_ratio]["heart"]
         offset_common = offsets["common"]
         offset_unity = offsets["unity"]
+        offset_calibration = offsets["calibration"]
 
-        common_position =  self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=offset_common["x_offset"], y_offset=offset_common["y_offset"])
-        unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"])
+        estimate_distance = self.estimate_distance(offset_calibration)
+        if estimate_distance is None:
+            return None
+        
+        common_position =  self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=offset_common["x_offset"], y_offset=offset_common["y_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
+        unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
         return common_position, unity_position
 
 class BrainPosition(BodyLandmarkPosition):
@@ -217,9 +278,14 @@ class BrainPosition(BodyLandmarkPosition):
         offsets = offsets_settings["aspect_ratio"][selected_aspect_ratio]["brain"]
         offset_common = offsets["common"]
         offset_unity = offsets["unity"]
+        offset_calibration = offsets["calibration"]
 
-        common_position = self.calculate_organ_position(center1=center_ear, center2=nose, x_offset=offset_common["x_offset"], y_offset=offset_common["y_offset"])
-        unity_position = self.calculate_unity_coordinates(center=center_ear, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"])
+        estimate_distance = self.estimate_distance(offset_calibration)
+        if estimate_distance is None:
+            return None
+        
+        common_position = self.calculate_organ_position(center1=center_ear, center2=nose, x_offset=offset_common["x_offset"], y_offset=offset_common["y_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
+        unity_position = self.calculate_unity_coordinates(center=center_ear, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
         return common_position, unity_position
 
 class LiverPosition(BodyLandmarkPosition):
@@ -242,9 +308,14 @@ class LiverPosition(BodyLandmarkPosition):
         offsets = offsets_settings["aspect_ratio"][selected_aspect_ratio]["liver"]
         offset_common = offsets["common"]
         offset_unity = offsets["unity"]
+        offset_calibration = offsets["calibration"]
 
-        common_position = self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=offset_common["x_offset"], y_offset=offset_common["y_offset"])
-        unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"])
+        estimate_distance = self.estimate_distance(offset_calibration)
+        if estimate_distance is None:
+            return None
+        
+        common_position = self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=offset_common["x_offset"], y_offset=offset_common["y_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
+        unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
         return common_position, unity_position
     
 class StomachPosition(BodyLandmarkPosition):
@@ -267,9 +338,14 @@ class StomachPosition(BodyLandmarkPosition):
         offsets = offsets_settings["aspect_ratio"][selected_aspect_ratio]["stomach"]
         offset_common = offsets["common"]
         offset_unity = offsets["unity"]
-
-        common_position = self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=offset_common["x_offset"], y_offset=offset_common["y_offset"])
-        unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"])
+        offset_calibration = offsets["calibration"]
+        
+        estimate_distance = self.estimate_distance(offset_calibration)
+        if estimate_distance is None:
+            return None
+        
+        common_position = self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=offset_common["x_offset"], y_offset=offset_common["y_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
+        unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
         return common_position, unity_position
 
 class IntestinePosition(BodyLandmarkPosition):
@@ -292,9 +368,14 @@ class IntestinePosition(BodyLandmarkPosition):
         offsets = offsets_settings["aspect_ratio"][selected_aspect_ratio]["intestine"]
         offset_common = offsets["common"]
         offset_unity = offsets["unity"]
-
-        common_position = self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=offset_common["x_offset"], y_offset=offset_common["y_offset"])
-        unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"])
+        offset_calibration = offsets["calibration"]
+        
+        estimate_distance = self.estimate_distance(offset_calibration)
+        if estimate_distance is None:
+            return None
+        
+        common_position = self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=offset_common["x_offset"], y_offset=offset_common["y_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
+        unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
         return common_position, unity_position
 
 
@@ -310,8 +391,13 @@ class BodyPosition(BodyLandmarkPosition):
 
         offsets = offsets_settings["aspect_ratio"][selected_aspect_ratio]["body"]
         offset_unity = offsets["unity"]
-    
-        all_unity_position = self.all_unity_coordinates(x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"])
+        offset_calibration = offsets["calibration"]
+        
+        estimate_distance = self.estimate_distance(offset_calibration)
+        if estimate_distance is None:
+            return None
+        
+        all_unity_position = self.all_unity_coordinates(x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
 
         if all_unity_position is None:
             return None
@@ -335,7 +421,12 @@ class BodyPositionV2(BodyLandmarkPosition):
         
         offsets = offsets_settings["aspect_ratio"][selected_aspect_ratio]["body"]
         offset_unity = offsets["unity"]
-
+        offset_calibration = offsets["calibration"]
+        
+        estimate_distance = self.estimate_distance(offset_calibration)
+        if estimate_distance is None:
+            return None
+        
         selected_body_marks = default_settings["selected_marks"]["body_v2"]
 
         landmarks_list = self.landmark_list()
@@ -344,7 +435,7 @@ class BodyPositionV2(BodyLandmarkPosition):
             for i in selected_body_marks:
                 landmark = self.get_landmark(i)
                 if landmark:
-                    position_dict = self.calculate_unity_coordinates(landmark, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"])
+                    position_dict = self.calculate_unity_coordinates(landmark, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
                     selected_position.append(position_dict)
         
         return None, selected_position

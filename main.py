@@ -218,11 +218,12 @@ async def handle_client(reader, writer):
                     break
                 
                 adjustedFrame = frame
-
                 if default_settings["adjust_orientation"]:
                     adjustedFrame = adjust_orientation(frame=frame);
 
-                
+                    if default_settings["override_typ_selected"]:
+                        typeSelected = default_settings["debug_organ"]
+        
                     position, image = await loop.run_in_executor(None, process_frame, adjustedFrame, typeSelected.lower())
                     if position is not None:            
                         await send_position(writer, position=position, addr=addr)

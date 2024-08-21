@@ -14,6 +14,15 @@ print(aspr, " => ", [image_height, image_width, aspect_ratio])
 cached the config to avoid O(N) problem of reading yaml file
 
 
+Y_OFFSETS
+calibration > 10  < 20 
+
+Heart Start at -175 and -1.5 (common and unity)
+calibration start at 10, then (10  - 10) * 15 - (19  - 10) * 0.15.
+calibration start at 10, then (10  - 10) * 15 - (19  - 10) * 0.15.
+
+
+
 Functions:
    pose_landmark
    hands_landmark
