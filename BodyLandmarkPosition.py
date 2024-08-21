@@ -1,6 +1,7 @@
 import math
 from config import svc_configs
 import traceback
+import numpy as np
 
 configs = svc_configs()
 default_settings  = configs["default"]["settings"]
@@ -39,16 +40,21 @@ class BodyLandmarkPosition:
             
             if abs(aspect_ratio - (fw / fh)) < tolerance:
                 # remove print for production
-                print(aspr, " => ", [image_height, image_width, aspect_ratio]) 
+                # print(aspr, " => ", [image_height, image_width, aspect_ratio]) 
                 return aspr
            
         print("Aspect Ratio Not Identified. [image_height, image_width, aspect_ratio] =>", [image_height, image_width, aspect_ratio])
         return None
 
-    def cv2_circle(self, color=(0, 0, 255), organ_postion=None):
-        if organ_postion is not None:
-            # image_height, image_width, _ = self.image.shape
-            self.cv2.circle(self.image, (organ_postion[0], organ_postion[1]), 10, color, -1)
+    def cv2_circle(self, color=(0, 0, 255), organ_position=None):
+        if organ_position is not None:
+            if len(organ_position) == 2:
+                x, y = organ_position
+                # Ensure x and y are integers
+                x = int(x)
+                y = int(y)
+                
+                self.cv2.circle(self.image, (x, y), 10, color, -1)
 
     def landmark_list(self):
         return [(lm.x, lm.y, lm.z) for lm in self.landmarks.landmark]
@@ -84,7 +90,7 @@ class BodyLandmarkPosition:
         y = int((center1[1] + (center2[1] - center1[1]) ) * image_height) + y_offset
         z = int(center1[2] * image_width)
         
-        self.cv2_circle(organ_postion=(x, y, z))
+        self.cv2_circle(organ_position=(x, y))
         return x, y, z
 
     def calculate_unity_coordinates(self, center, x_offset=0, y_offset=0, z_offset=0):
@@ -126,6 +132,45 @@ class BodyLandmarkPosition:
             return adjusted_landmarks
         else:
             return None
+    
+    def calculate_pixel_distance(self, point1, point2):
+        x1, y1 = point1
+        x2, y2 = point2
+        return np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+
+    def pixel_to_meters(self, pixel_distance, known_height_pixels, known_height_meters):
+        # Convert pixel distance to real-world distance
+        return (pixel_distance / known_height_pixels) * known_height_meters
+
+    def estimate_distance(self):
+        Nose = self.get_landmark('NOSE')
+        pair_foot = self.landmark_pair('LEFT_FOOT_INDEX', 'RIGHT_FOOT_INDEX') 
+
+        if Nose and pair_foot:
+            center_foot = self.center(pair_foot)
+
+            # Convert normalized coordinates to pixel coordinates
+            image_height, image_width = self.image.shape[:2]
+            head_top_pixel = (int(Nose[0] * image_width), int(Nose[1] * image_height))
+            foot_pixel = (int(center_foot[0] * image_width), int(center_foot[1] * image_height))
+
+            # Calculate pixel distance
+            height_pixels = self.calculate_pixel_distance(head_top_pixel, foot_pixel)
+            
+            # Calibration data
+            known_height_pixels = 100  # Example height in pixels
+            known_height_meters = 1.75  # Example height in meters
+
+            # Convert pixel distance to meters
+            height_meters = self.pixel_to_meters(height_pixels, known_height_pixels, known_height_meters)
+
+            # Check if the person is more than 3 meters away
+            div3  = height_meters / 3
+
+            if div3 > 3 and div3 < 5: 
+                print(div3)
+                return True
+            return False
     
 
 class HeartPosition(BodyLandmarkPosition):

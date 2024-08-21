@@ -27,7 +27,7 @@ settings:
       brain:
         common:
           x_offset: 0
-          y_offset: 1.2
+          y_offset: -75
           z_offset: 4
         unity:
           x_offset: 0
@@ -79,7 +79,7 @@ settings:
       heart:
         common:
           x_offset: 0
-          y_offset: -120
+          y_offset: -175
           z_offset: 4
         unity:
           x_offset: 0

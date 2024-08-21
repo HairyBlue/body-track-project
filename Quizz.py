@@ -96,21 +96,32 @@ class GestureCommon(BodyLandmarkPosition):
 
 
 class HandLandmarkPostion:
-    def __init__(self, landmarks, mp_hands, cv2, image):
+    def __init__(self, landmarks, handness, mp_hands, cv2, image):
         self.landmarks = landmarks
+        self.handness = handness
         self.mp_hands = mp_hands
         self.cv2 = cv2
         self.image = image
 
-    def landmark_list(self):
-        return [(lm.x, lm.y, lm.z) for lm in  self.hands_marks.landmark]
+    def get_handedness(self):
+        return self.handness
+    
+    def get_label(self, clf):
+        if clf.classification[0].label == "Left":
+            return "Right"
+        if clf.classification[0].label == "Right":
+            return "Left"
+        else:
+            return clf.classification[0].label
+        
+    def landmark_list(self, idx):
+        return [(lm.x, lm.y, lm.z) for lm in  self.landmarks[idx].landmark]
 
-    def get_landmark(self, landmark_name):
-        landmarks = self.landmark_list()
+    def get_landmark(self, landmark_name, idx):
+        landmarks = self.landmark_list(idx)
         landmark = landmarks[self.mp_hands.HandLandmark[landmark_name].value]
         return landmark if 0 <= landmark[0] <= 1 and 0 <= landmark[1] <= 1 else None
     
-
 
 def start_quiz(args, args2):
     global quizzStarted
@@ -128,10 +139,25 @@ def start_quiz(args, args2):
             quizzStarted = hands_up
 
     if quizzStarted:
-        HandLandmarkPostion(**args2)
+        hand_landmark = HandLandmarkPostion(**args2)
+        handedness = hand_landmark.get_handedness()
 
-        for organ in organs:
-            results = calculate_position_v2(organ, args)
-            if results is not None:
-                common_position, unity_position = results
-                common.calculate_chosen_organ(organ, common_position, None)
+        
+        # for organ in organs:
+        #     if handedness is None:
+        #         continue
+
+        #     results = calculate_position_v2(organ, args)
+        # if handedness is not None:
+        #     for idx, clf in enumerate(handedness):
+        #         # print(hand_landmark.get_label(clf))
+                
+        #         middle_finger_mcp = hand_landmark.get_landmark("MIDDLE_FINGER_MCP", idx)
+    
+        #         for organ in organs:
+        #             results = calculate_position_v2(organ, args)
+
+        #             if results is not None:
+        #                 common_position, _ = results
+        #                 # if common_position:
+        #                     # common.calculate_chosen_organ(organ, common_position, None)

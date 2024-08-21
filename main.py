@@ -336,7 +336,13 @@ def debug_quizz():
     cap = cv2.VideoCapture(0)
     while cap.isOpened():
         ret, frame = cap.read()
-        image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        adjustedFrame = frame
+
+        if default_settings["adjust_orientation"]:
+            adjustedFrame = adjust_orientation(frame=frame);
+        
+        image = cv2.cvtColor(adjustedFrame, cv2.COLOR_BGR2RGB)
         image.flags.writeable = False
         
         pose_results = pose.process(image)
@@ -344,12 +350,17 @@ def debug_quizz():
         
         hands_results = hands.process(image)
         hands_marks = hands_results.multi_hand_landmarks
+        handness = hands_results.multi_handedness
 
         if landmarks:
             image.flags.writeable = True
             image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         
             mp_drawing.draw_landmarks(image, landmarks, mp_pose.POSE_CONNECTIONS)
+
+        if hands_marks:
+            for hand_landmarks in hands_marks:
+                mp_drawing.draw_landmarks(image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
     
             # unpack dictionary later
             args = {
@@ -361,6 +372,7 @@ def debug_quizz():
 
             args2 = {
                 'landmarks': hands_marks,
+                'handness': handness,
                 'mp_hands': mp_hands,
                 'cv2': cv2,
                 'image': image
@@ -381,8 +393,8 @@ def main():
         asyncio.run(unity_stream())
     elif main_runner == "debug":
         debug_feed()
-    elif main_runner == "debug_quzz":
-        debug_quizz
+    elif main_runner == "debug_quizz":
+        debug_quizz()
     else:
         print("No main runner choosen. Please choose between [unity, debug, debug_quizz] and change the mainRunner on ./settings/default.settings.yaml")
     
