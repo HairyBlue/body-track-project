@@ -78,4 +78,4 @@ deactivate
 ```
 
 ## Additional Resources (o^▽^o)
-For further exploration of similar projects or additional modules related to mobile augmented reality and human anatomy, refer to the [Mobile Augmented Reality in Human Anatomy project repository](https://github.com/HairyBlue/unity_ar_human_anatomy).
+For further exploration of similar projects or additional modules related to mobile augmented reality and human anatomy, refer to the [unity-ar-human-anatomy](https://github.com/HairyBlue/unity-ar-human-anatomy).
