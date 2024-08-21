@@ -42,10 +42,10 @@ On Windows
 # Command Prompt or PowerShell
 .\venv\Scripts\python -m pip install -r requirements.txt # Or venv\Scripts\python -m pip install -r requirements.txt
 # Git Bash
-./venv/Scripts/python -m pip install -r requirements.txt # venv/Scripts/python  -m pip install -r requirements.txt
+./venv/Scripts/python -m pip install -r requirements.txt # Or venv/Scripts/python  -m pip install -r requirements.txt
 ```
 
-When using Linux or Max
+When using Linux or macOS
 ``` bash
 venv/bin/activate -m pip install -r requirements.txt
 ```
