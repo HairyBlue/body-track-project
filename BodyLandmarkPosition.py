@@ -79,9 +79,10 @@ class BodyLandmarkPosition:
     
     def calculate_organ_position(self, center1, center2, x_offset=0, y_offset=0):
         image_height, image_width = self.image_shape()
-        z = int(center1[2] * image_width)
+
         x = int(center1[0] * image_width) + x_offset
-        y = int((center1[1] + (center2[1] - center1[1]) ) * image_height + y_offset) + z
+        y = int((center1[1] + (center2[1] - center1[1]) ) * image_height) + y_offset
+        z = int(center1[2] * image_width)
         
         self.cv2_circle(organ_postion=(x, y, z))
         return x, y, z

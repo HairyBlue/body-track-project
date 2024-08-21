@@ -79,7 +79,7 @@ settings:
       heart:
         common:
           x_offset: 0
-          y_offset: -10
+          y_offset: -120
           z_offset: 4
         unity:
           x_offset: 0
