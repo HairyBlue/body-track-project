@@ -189,6 +189,19 @@ async def send_queue_msg(writer, connectedUser):
     except Exception as e:
         print(f"Error sending queue message: {e}")
 
+async def send_error_distance(writer, connectedUser):
+    try:
+        message = "The person is not at the proper distance. Please move closer or farther to adjust to the correct distance."
+        json_msg = {'uuid': connectedUser, 'queue': message}
+
+        data = json.dumps(json_msg).encode('utf-8')
+        length_prefix = len(data).to_bytes(4, byteorder='little')
+
+        writer.write(length_prefix + data)
+        await writer.drain()
+
+    except Exception as e:
+        print(f"Error sending queue message: {e}")
 
 async def handle_client(reader, writer):
     global isTrackable
@@ -225,8 +238,11 @@ async def handle_client(reader, writer):
                         typeSelected = default_settings["debug_organ"]
         
                     position, image = await loop.run_in_executor(None, process_frame, adjustedFrame, typeSelected.lower())
-                    if position is not None:            
-                        await send_position(writer, position=position, addr=addr)
+                    if position is not None:    
+                        if position == default_settings["err_distance"]:
+                            await send_error_distance(writer, connectedUser)
+                        else:
+                            await send_position(writer, position=position, addr=addr)
 
                     if image is not None:
                         cv2.imshow(addr[0], image)

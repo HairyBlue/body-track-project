@@ -6,6 +6,8 @@ settings:
   enable_adjustments_settings: False # True or False
   override_typ_selected: True # Override the selected organ in unity if debug mode on
 
+  err_distance: True
+
   mp:
     pose:
       static_image_mode: False
