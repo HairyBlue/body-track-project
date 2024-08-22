@@ -74,10 +74,14 @@ function fstart() {
 }
 
 function freeze() {
+   if [[ -f "requirements.txt" ]]; then
+      rm "requirements.txt"
+   fi
+
    if [[ -d "./venv/Scripts" ]]; then
-      ./venv/Scripts/python -m pip freeze > requirements.txt
+      ./venv/Scripts/python -m pip freeze | sed 's/==.*//' > requirements.txt
    elif [[ -d "./venv/bin" ]]; then
-      ./venv/bin/python -m pip freeze > requirements.txt
+      ./venv/bin/python -m pip freeze | sed 's/==.*//' > requirements.txt
    else 
       die "Virtual environment not found. Build first"
    fi
