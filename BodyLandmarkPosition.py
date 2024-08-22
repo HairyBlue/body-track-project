@@ -334,7 +334,7 @@ class KidneyPosition(BodyLandmarkPosition):
         center_shoulder = self.center(pair_shoulder)
         center_hip = self.center(pair_hip)
         
-        offsets = offsets_settings["aspect_ratio"][selected_aspect_ratio]["lungs"]
+        offsets = offsets_settings["aspect_ratio"][selected_aspect_ratio]["kidney"]
         offset_common = offsets["common"]
         offset_unity = offsets["unity"]
         offset_calibration = offsets["calibration"]

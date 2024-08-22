@@ -106,7 +106,7 @@ settings:
       kidney:
         common:
           x_offset: 0
-          y_offset: -175
+          y_offset: -155
           z_offset: 4
         unity:
           x_offset: 0
