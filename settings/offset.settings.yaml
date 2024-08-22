@@ -102,6 +102,34 @@ settings:
             operator: "subtraction"
             common: 0
             unity: 0.75
+    
+      kidney:
+        common:
+          x_offset: 0
+          y_offset: -175
+          z_offset: 4
+        unity:
+          x_offset: 0
+          y_offset: -1.5
+          z_offset: 20
+        calibration:
+          minimum: 10.20
+          maximum: 19.80
+          y_offset:
+            enable: True
+            operator: "subtraction"
+            common: 15
+            unity: 0.15
+          x_offset:
+            enable: False
+            operator: "subtraction"
+            common: 0
+            unity: 0
+          z_offset:
+            enable: True
+            operator: "subtraction"
+            common: 0
+            unity: 0.75
 
       liver:
         common:

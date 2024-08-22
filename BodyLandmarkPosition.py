@@ -317,6 +317,35 @@ class LungsPosition(BodyLandmarkPosition):
         unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
         return common_position, unity_position
     
+class KidneyPosition(BodyLandmarkPosition):
+    def __init__(self, landmarks, mp_pose, cv2, image):
+        super().__init__(landmarks, mp_pose, cv2, image)
+
+    def get_position(self):
+        selected_aspect_ratio =  self.determine_aspect_ratio()
+        if selected_aspect_ratio is None:
+            return None
+        
+        pair_shoulder = self.landmark_pair('LEFT_SHOULDER', 'RIGHT_SHOULDER')
+        pair_hip = self.landmark_pair('LEFT_HIP', 'RIGHT_HIP')
+        if pair_shoulder is None or pair_hip is None:
+            return None
+
+        center_shoulder = self.center(pair_shoulder)
+        center_hip = self.center(pair_hip)
+        
+        offsets = offsets_settings["aspect_ratio"][selected_aspect_ratio]["lungs"]
+        offset_common = offsets["common"]
+        offset_unity = offsets["unity"]
+        offset_calibration = offsets["calibration"]
+
+        estimate_distance = self.estimate_distance(offset_calibration)
+        if estimate_distance is None:
+            return default_settings["err_distance"]
+        
+        common_position =  self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=offset_common["x_offset"], y_offset=offset_common["y_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
+        unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
+        return common_position, unity_position
 class LiverPosition(BodyLandmarkPosition):
     def __init__(self, landmarks, mp_pose, cv2, image):
         super().__init__(landmarks, mp_pose, cv2, image)
@@ -531,6 +560,7 @@ def calculate_position_v2(oType, args):
             brain = BrainPosition
             heart = HeartPosition
             lungs = LungsPosition
+            kidney = KidneyPosition
             liver = LiverPosition
             stomach =  StomachPosition
             intestine = IntestinePosition
@@ -541,6 +571,7 @@ def calculate_position_v2(oType, args):
                 'brain': brain,
                 'heart': heart,
                 'lungs': lungs,
+                'kidney': kidney,
                 'liver': liver,
                 'stomach': stomach,
                 'intestine': intestine,
