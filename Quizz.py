@@ -6,7 +6,7 @@ configs = svc_configs()
 default_settings  = configs["default"]["settings"]
 
 quizzStarted = False
-organs = ['heart', 'brain', 'liver', 'stomach', 'intestine']
+organs = default_settings["organs"]
 
 class GestureCommon(BodyLandmarkPosition):
     def __init__(self, landmarks, mp_pose, cv2, image):

@@ -228,7 +228,35 @@ class BodyLandmarkPosition:
     
             return None
     
+class BrainPosition(BodyLandmarkPosition):
+    def __init__(self, landmarks, mp_pose, cv2, image):
+        super().__init__(landmarks, mp_pose, cv2, image)
 
+    def get_position(self):
+        selected_aspect_ratio =  self.determine_aspect_ratio()
+        if selected_aspect_ratio is None:
+            return None
+               
+        nose = self.get_landmark('NOSE')
+        pair_ear = self.landmark_pair('LEFT_EAR', 'RIGHT_EAR')  
+        if pair_ear is None or nose is None:
+            return None 
+        
+        center_ear = self.center(pair_ear)
+        
+        offsets = offsets_settings["aspect_ratio"][selected_aspect_ratio]["brain"]
+        offset_common = offsets["common"]
+        offset_unity = offsets["unity"]
+        offset_calibration = offsets["calibration"]
+
+        estimate_distance = self.estimate_distance(offset_calibration)
+        if estimate_distance is None:
+            return default_settings["err_distance"]
+        
+        common_position = self.calculate_organ_position(center1=center_ear, center2=nose, x_offset=offset_common["x_offset"], y_offset=offset_common["y_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
+        unity_position = self.calculate_unity_coordinates(center=center_ear, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
+        return common_position, unity_position
+    
 class HeartPosition(BodyLandmarkPosition):
     def __init__(self, landmarks, mp_pose, cv2, image):
         super().__init__(landmarks, mp_pose, cv2, image)
@@ -259,7 +287,7 @@ class HeartPosition(BodyLandmarkPosition):
         unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
         return common_position, unity_position
 
-class BrainPosition(BodyLandmarkPosition):
+class LungsPosition(BodyLandmarkPosition):
     def __init__(self, landmarks, mp_pose, cv2, image):
         super().__init__(landmarks, mp_pose, cv2, image)
 
@@ -267,15 +295,16 @@ class BrainPosition(BodyLandmarkPosition):
         selected_aspect_ratio =  self.determine_aspect_ratio()
         if selected_aspect_ratio is None:
             return None
-               
-        nose = self.get_landmark('NOSE')
-        pair_ear = self.landmark_pair('LEFT_EAR', 'RIGHT_EAR')  
-        if pair_ear is None or nose is None:
-            return None 
         
-        center_ear = self.center(pair_ear)
+        pair_shoulder = self.landmark_pair('LEFT_SHOULDER', 'RIGHT_SHOULDER')
+        pair_hip = self.landmark_pair('LEFT_HIP', 'RIGHT_HIP')
+        if pair_shoulder is None or pair_hip is None:
+            return None
+
+        center_shoulder = self.center(pair_shoulder)
+        center_hip = self.center(pair_hip)
         
-        offsets = offsets_settings["aspect_ratio"][selected_aspect_ratio]["brain"]
+        offsets = offsets_settings["aspect_ratio"][selected_aspect_ratio]["lungs"]
         offset_common = offsets["common"]
         offset_unity = offsets["unity"]
         offset_calibration = offsets["calibration"]
@@ -284,10 +313,10 @@ class BrainPosition(BodyLandmarkPosition):
         if estimate_distance is None:
             return default_settings["err_distance"]
         
-        common_position = self.calculate_organ_position(center1=center_ear, center2=nose, x_offset=offset_common["x_offset"], y_offset=offset_common["y_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
-        unity_position = self.calculate_unity_coordinates(center=center_ear, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
+        common_position =  self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=offset_common["x_offset"], y_offset=offset_common["y_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
+        unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
         return common_position, unity_position
-
+    
 class LiverPosition(BodyLandmarkPosition):
     def __init__(self, landmarks, mp_pose, cv2, image):
         super().__init__(landmarks, mp_pose, cv2, image)
@@ -499,8 +528,9 @@ def calculate_position(organ_type, landmarks, mp_pose, cv2, image):
 
 def calculate_position_v2(oType, args):
         try:
-            heart = HeartPosition
             brain = BrainPosition
+            heart = HeartPosition
+            lungs = LungsPosition
             liver = LiverPosition
             stomach =  StomachPosition
             intestine = IntestinePosition
@@ -508,8 +538,9 @@ def calculate_position_v2(oType, args):
             # body_v2 = BodyPositionV2
 
             organs = {
-                'heart': heart,
                 'brain': brain,
+                'heart': heart,
+                'lungs': lungs,
                 'liver': liver,
                 'stomach': stomach,
                 'intestine': intestine,

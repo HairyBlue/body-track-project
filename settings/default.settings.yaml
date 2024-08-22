@@ -1,6 +1,6 @@
 settings:
   main_runner: "unity" # unity, debug, debug_quizz
-  debug_organ: "heart" # heart, brain, liver, stomach, intestine, body
+  debug_organ: "heart" # brain,  heart, lungs, liver, stomach, intestine, body
 
   adjust_orientation: True # If main runner is unity => True if mobile device used and False when using webcam
   enable_adjustments_settings: False # True or False
@@ -23,6 +23,7 @@ settings:
       min_detection_confidence: 0.5
       min_tracking_confidence: 0.5
 
+  organs: ["brain", "heart", "lungs" , "liver", "stomach", "intestine"]
   pose_landmarks:
     [
       "NOSE",
