@@ -31,3 +31,8 @@ Functions:
    queueing for connected user
    organ positioning for unity and common points
    quizz combination of pose_landmark and hands_landmark
+
+
+
+
+   
