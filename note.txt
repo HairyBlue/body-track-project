@@ -14,13 +14,14 @@ print(aspr, " => ", [image_height, image_width, aspect_ratio])
 cached the config to avoid O(N) problem of reading yaml file
 
 
-Y_OFFSETS
+Y_OFFSETS 
 calibration > 10  < 20 
 
 Heart Start at -175 and -1.5 (common and unity)
 calibration start at 10, then (10  - 10) * 15 to (19  - 10) * 0.15.
 calibration start at 10, then (10  - 10) * 15 to (19  - 10) * 0.15.
 
+NEED TO CALBRATE WITH ACUAL PERSON STANDING
 
 
 Functions:
@@ -31,8 +32,3 @@ Functions:
    queueing for connected user
    organ positioning for unity and common points
    quizz combination of pose_landmark and hands_landmark
-
-
-
-
-   

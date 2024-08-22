@@ -106,11 +106,11 @@ settings:
       kidney:
         common:
           x_offset: 0
-          y_offset: -155
+          y_offset: -90
           z_offset: 4
         unity:
           x_offset: 0
-          y_offset: -1.5
+          y_offset: -2.25
           z_offset: 20
         calibration:
           minimum: 10.20
