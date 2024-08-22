@@ -253,7 +253,7 @@ class HeartPosition(BodyLandmarkPosition):
 
         estimate_distance = self.estimate_distance(offset_calibration)
         if estimate_distance is None:
-            return None, default_settings["err_distance"]
+            return default_settings["err_distance"]
         
         common_position =  self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=offset_common["x_offset"], y_offset=offset_common["y_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
         unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
@@ -282,7 +282,7 @@ class BrainPosition(BodyLandmarkPosition):
 
         estimate_distance = self.estimate_distance(offset_calibration)
         if estimate_distance is None:
-            return None, default_settings["err_distance"]
+            return default_settings["err_distance"]
         
         common_position = self.calculate_organ_position(center1=center_ear, center2=nose, x_offset=offset_common["x_offset"], y_offset=offset_common["y_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
         unity_position = self.calculate_unity_coordinates(center=center_ear, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
@@ -312,7 +312,7 @@ class LiverPosition(BodyLandmarkPosition):
 
         estimate_distance = self.estimate_distance(offset_calibration)
         if estimate_distance is None:
-            return None, default_settings["err_distance"]
+            return default_settings["err_distance"]
         
         common_position = self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=offset_common["x_offset"], y_offset=offset_common["y_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
         unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
@@ -342,7 +342,7 @@ class StomachPosition(BodyLandmarkPosition):
         
         estimate_distance = self.estimate_distance(offset_calibration)
         if estimate_distance is None:
-            return None, default_settings["err_distance"]
+            return default_settings["err_distance"]
         
         common_position = self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=offset_common["x_offset"], y_offset=offset_common["y_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
         unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
@@ -372,7 +372,7 @@ class IntestinePosition(BodyLandmarkPosition):
         
         estimate_distance = self.estimate_distance(offset_calibration)
         if estimate_distance is None:
-            return None, default_settings["err_distance"]
+            return default_settings["err_distance"]
         
         common_position = self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=offset_common["x_offset"], y_offset=offset_common["y_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
         unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
@@ -395,7 +395,7 @@ class BodyPosition(BodyLandmarkPosition):
         
         estimate_distance = self.estimate_distance(offset_calibration)
         if estimate_distance is None:
-            return None, default_settings["err_distance"]
+            return default_settings["err_distance"]
         
         all_unity_position = self.all_unity_coordinates(x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
 
@@ -425,7 +425,7 @@ class BodyPositionV2(BodyLandmarkPosition):
         
         estimate_distance = self.estimate_distance(offset_calibration)
         if estimate_distance is None:
-            return None, default_settings["err_distance"]
+            return default_settings["err_distance"]
         
         selected_body_marks = default_settings["selected_marks"]["body_v2"]
 

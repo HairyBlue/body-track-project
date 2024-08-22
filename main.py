@@ -82,6 +82,7 @@ def adjust_orientation(frame):
 
 
 def process_frame(frame, trackType):
+    results = None
     image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     image.flags.writeable = False
 
@@ -119,11 +120,7 @@ def process_frame(frame, trackType):
             mp_drawing.draw_landmarks(image, landmarks, mp_pose.POSE_CONNECTIONS)
             results =  calculate_position_v2(trackType, args)
         
-        if results is not None:
-            _ , unity_position = results
-            return unity_position, image
-        
-    return None, None
+    return results, image
 
 async def receive_json(reader):
 
@@ -158,12 +155,12 @@ async def receive_frame(reader):
         return None, None
 
 
-async def send_position(writer, position, addr):
+async def send_position(writer, unity_position, addr):
     global start_time
     global currentAddr
     try:
         if currentAddr == addr:
-            data = json.dumps(position).encode('utf-8')
+            data = json.dumps(unity_position).encode('utf-8')
             length_prefix = len(data).to_bytes(4, byteorder='little')
             writer.write(length_prefix + data)
             
@@ -237,12 +234,14 @@ async def handle_client(reader, writer):
                     if default_settings["override_typ_selected"]:
                         typeSelected = default_settings["debug_organ"]
         
-                    position, image = await loop.run_in_executor(None, process_frame, adjustedFrame, typeSelected.lower())
-                    if position is not None:    
-                        if position == default_settings["err_distance"]:
+                    results, image = await loop.run_in_executor(None, process_frame, adjustedFrame, typeSelected.lower())
+                    
+                    if results is not None:    
+                        if isinstance(results, str) and results == default_settings["err_distance"]:
                             await send_error_distance(writer, connectedUser)
                         else:
-                            await send_position(writer, position=position, addr=addr)
+                            common_position, unity_position = results
+                            await send_position(writer, unity_position=unity_position, addr=addr)
 
                     if image is not None:
                         cv2.imshow(addr[0], image)
@@ -335,7 +334,11 @@ def debug_feed():
                     results =  calculate_position_v2(debug_organ, args)
                     
                     if results is not None:
-                        common_position, unity_position = results
+                        if isinstance(results, str) and results == default_settings["err_distance"]:
+                            print("The person is not at the proper distance. Please move closer or farther to adjust to the correct distance.")
+                        else:    
+                            common_position, unity_position = results
+
                         end_time = time.time()
                         calc_time_and_log(topic='debug_unity_position', start_time=start_time, end_time=end_time)
 

@@ -6,7 +6,7 @@ settings:
   enable_adjustments_settings: False # True or False
   override_typ_selected: True # Override the selected organ in unity if debug mode on
 
-  err_distance: True
+  err_distance: "error_distance" # send error message to current user if distance in not appropriate
 
   mp:
     pose:

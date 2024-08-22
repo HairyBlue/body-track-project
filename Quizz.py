@@ -1,5 +1,9 @@
 import math
 from BodyLandmarkPosition import BodyLandmarkPosition, calculate_position_v2
+from config import svc_configs
+
+configs = svc_configs()
+default_settings  = configs["default"]["settings"]
 
 quizzStarted = False
 organs = ['heart', 'brain', 'liver', 'stomach', 'intestine']
@@ -147,8 +151,6 @@ def start_quiz(args, args2):
         #     if handedness is None:
         #         continue
 
-        #     results = calculate_position_v2(organ, args)
-        # if handedness is not None:
         #     for idx, clf in enumerate(handedness):
         #         # print(hand_landmark.get_label(clf))
                 
@@ -156,8 +158,10 @@ def start_quiz(args, args2):
     
         #         for organ in organs:
         #             results = calculate_position_v2(organ, args)
-
         #             if results is not None:
-        #                 common_position, _ = results
-        #                 # if common_position:
-        #                     # common.calculate_chosen_organ(organ, common_position, None)
+        #                 if isinstance(results, str) and results == default_settings["err_distance"]:
+        #                     print("The person is not at the proper distance. Please move closer or farther to adjust to the correct distance.")
+        #                 else:    
+        #                     common_position, unity_position = results
+        #                     if common_position:
+        #                         common.calculate_chosen_organ(organ, common_position, None)

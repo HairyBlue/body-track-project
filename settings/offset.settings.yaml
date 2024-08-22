@@ -189,7 +189,7 @@ settings:
         unity:
           x_offset: 0
           y_offset: -1.5
-          z_offset: 22
+          z_offset: 20
         calibration:
           minimum: 10.20
           maximum: 19.80
@@ -212,20 +212,20 @@ settings:
       brain:
         common:
           x_offset: 0
-          y_offset: 100
+          y_offset: -20
           z_offset: 4
         unity:
           x_offset: 0
-          y_offset: 1.2
-          z_offset: 4
+          y_offset: -0.065
+          z_offset: 20
         calibration:
           minimum: 10.20
           maximum: 19.80
           y_offset:
-            enable: False
-            operator: "addition"
-            common: 0
-            unity: 0
+            enable: True
+            operator: "subtraction"
+            common: 5.5
+            unity: 0.15
           x_offset:
             enable: False
             operator: "subtraction"
@@ -245,7 +245,7 @@ settings:
         unity:
           x_offset: -0.8
           y_offset: -2
-          z_offset: 4
+          z_offset: 20
         calibration:
           minimum: 10.20
           maximum: 19.80
