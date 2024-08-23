@@ -6,9 +6,12 @@ import asyncio
 import time
 
 from BodyLandmarkPosition import calculate_position, calculate_position_v2
-from Quizz import start_quiz
-from Logger import calc_time_and_log
+from Quizz import start_quiz_func
+from Logger import calc_time_and_log, setup_logger_svc
 from config import svc_configs
+from datetime import datetime, timezone
+
+svc_logger = setup_logger_svc()
 
 configs = svc_configs()
 default_settings  = configs["default"]["settings"]
@@ -26,9 +29,10 @@ pose = mp_pose.Pose(**mp_settings_pose)
 mp_hands = mp.solutions.hands
 hands = mp_hands.Hands(**mp_settings_hands)
 
-currentAddr = ""
-currentUser = ""
-typeSelected = ""
+currentAddr = None
+currentUser = None
+typeSelected = None
+startQuiz = False
 
 user_queue = []
 unique_users = set()
@@ -59,15 +63,26 @@ def register_user(user, msg, addr):
     global currentAddr
     global currentUser
     global typeSelected
+    global startQuiz
+
     try:
         if user and user not in unique_users:
             user_queue.append(user)
             unique_users.add(user)
+            svc_logger.info(str(user_queue))
         
         if user_queue.index(user) == 0:
-            currentUser = user  
-            typeSelected = msg
-            currentAddr = addr
+
+            if msg == "START_QUIZZ":
+                startQuiz = True
+            if msg == "END_QUIZZ":
+                startQuiz = False
+
+            if currentUser is None:
+                currentUser = user  
+                typeSelected = msg
+                currentAddr = addr
+
             # print(currentUser)
 
     except Exception as e:
@@ -86,6 +101,9 @@ def process_frame(frame, trackType):
     image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     image.flags.writeable = False
 
+    if default_settings["image_flip"]:
+        image = cv2.flip(image, 1);
+    
     # mp_pose
     pose_results = pose.process(image)
     landmarks = pose_results.pose_landmarks
@@ -93,6 +111,7 @@ def process_frame(frame, trackType):
     # mp_hands
     hands_results = hands.process(image)
     hands_marks = hands_results.multi_hand_landmarks
+    handness = hands_results.multi_handedness
 
     if landmarks or hands_marks:
         image.flags.writeable = True
@@ -112,6 +131,7 @@ def process_frame(frame, trackType):
 
             args2 = {
                 'landmarks': hands_marks,
+                'handness': handness,
                 'mp_hands': mp_hands,
                 'cv2': cv2,
                 'image': image
@@ -119,6 +139,9 @@ def process_frame(frame, trackType):
 
             mp_drawing.draw_landmarks(image, landmarks, mp_pose.POSE_CONNECTIONS)
             results =  calculate_position_v2(trackType, args)
+
+            if startQuiz:
+                start_quiz_func(args, args2, trackType, results, currentUser, send_user_message)
         
     return results, image
 
@@ -186,9 +209,9 @@ async def send_queue_msg(writer, connectedUser):
     except Exception as e:
         print(f"Error sending queue message: {e}")
 
-async def send_error_distance(writer, connectedUser):
+async def send_user_message(writer, connectedUser, message):
     try:
-        message = "The person is not at the proper distance. Please move closer or farther to adjust to the correct distance."
+        # message = "The person is not at the proper distance. Please move closer or farther to adjust to the correct distance."
         json_msg = {'uuid': connectedUser, 'queue': message}
 
         data = json.dumps(json_msg).encode('utf-8')
@@ -201,9 +224,11 @@ async def send_error_distance(writer, connectedUser):
         print(f"Error sending queue message: {e}")
 
 async def handle_client(reader, writer):
-    global isTrackable
     global start_time
     global currentUser
+    global currentAddr
+    global typeSelected
+    global startQuiz
 
     addr = writer.get_extra_info('peername')
     loop = asyncio.get_running_loop()
@@ -228,31 +253,31 @@ async def handle_client(reader, writer):
                     break
                 
                 adjustedFrame = frame
+
                 if default_settings["adjust_orientation"]:
                     adjustedFrame = adjust_orientation(frame=frame);
+                if default_settings["override_type_selected"]:
+                    typeSelected = default_settings["debug_organ"]
 
-                    if default_settings["override_typ_selected"]:
-                        typeSelected = default_settings["debug_organ"]
-        
+                if typeSelected is not None:
                     results, image = await loop.run_in_executor(None, process_frame, adjustedFrame, typeSelected.lower())
-                    
                     if results is not None:    
                         if isinstance(results, str) and results == default_settings["err_distance"]:
-                            await send_error_distance(writer, connectedUser)
+                            message = "The person is not at the proper distance. Please move closer or farther to adjust to the correct distance."
+                            await send_user_message(writer, connectedUser, message)
                         else:
                             common_position, unity_position = results
                             await send_position(writer, unity_position=unity_position, addr=addr)
 
-                    if image is not None:
-                        cv2.imshow(addr[0], image)
-                        cv2.waitKey(1)
+                if image is not None:
+                    cv2.imshow(addr[0], image)
+                    cv2.waitKey(1)
 
             else:
                 if len(connectedUser) > 0:
                     await send_queue_msg(writer, connectedUser)
-
-
             await asyncio.sleep(0.012)
+
     except Exception as e:
         print(f"Exception in client thread: {e}")
         cv2.destroyWindow(addr[0])
@@ -261,13 +286,20 @@ async def handle_client(reader, writer):
         await writer.wait_closed()
         print(f"Connection to {addr} closed.")
         # dequeue current user
+
         if currentUser == user_queue[0]:
             dequeue_user()
+            startQuiz = False
+            currentAddr = None
+            currentUser = None
+            typeSelected = None
+
             if user_queue:
                 currentUser = user_queue[0]  
         else:
             # if other user quit or any error happen pop them, dont remove the current user
             pop_user(connectedUser)
+
 
 async def cb(reader, writer):
     addr = writer.get_extra_info('peername')
@@ -280,10 +312,11 @@ async def unity_stream():
     port = 5000
 
     server = await asyncio.start_server(cb, host, port)
-    print(f'Server listening on {host}:{port}')
+    current_time_gmt = datetime.now(timezone.utc)
 
-    # user_queue.append('huy')
-    # unique_users.add('huy')
+    svc_msg = f'Server start at {current_time_gmt}, server port: {port}'
+    svc_logger.info(svc_msg)
+    # print(svc_msg)
 
     async with server:
         await server.serve_forever()
@@ -303,7 +336,10 @@ def debug_feed():
             
             image = cv2.cvtColor(adjustedFrame, cv2.COLOR_BGR2RGB)
             image.flags.writeable = False
-
+            
+            if default_settings["image_flip"]:
+                image = cv2.flip(image, 1);
+            
             pose_results = pose.process(image)
             landmarks = pose_results.pose_landmarks
             
@@ -363,6 +399,10 @@ def debug_quizz():
             adjustedFrame = adjust_orientation(frame=frame);
         
         image = cv2.cvtColor(adjustedFrame, cv2.COLOR_BGR2RGB)
+        
+        if default_settings["image_flip"]:
+            image = cv2.flip(image, 1);
+
         image.flags.writeable = False
         
         pose_results = pose.process(image)
@@ -398,7 +438,7 @@ def debug_quizz():
                 'image': image
             }
 
-            start_quiz(args=args, args2=args2)
+            start_quiz_func(args=args, args2=args2)
 
             cv2.imshow("Mediapipe feed", image)
             cv2.waitKey(1)
