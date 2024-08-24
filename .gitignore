@@ -8,3 +8,8 @@ backup-logs
 backup-logs/**
 
 output.log
+
+deps/logsToJson
+deps/logsToJson/**
+DownloadedLogs
+DownloadedLogs/**

@@ -5,27 +5,30 @@ backup='backup-logs'
 timestamp=$(date +"%Y%m%d_%H%M%S")
 
 
-if [[ ! -d  "$backup" ]]; then
-   mkdir $backup
-fi
-
-if [[ -d 'logs' ]]; then
-   if [[ "$(ls -A logs)" ]]; then
-      echo "create backup for logs"
-      bkp="$backup/$timestamp-bkp"
-      mkdir $bkp
-      cp -r logs/* $bkp
+function doManFile() {
+   if [[ ! -d  "$backup" ]]; then
+      mkdir $backup
    fi
- 
-   rm -rf logs
-fi
 
-if [[ -d 'output.log' ]]; then
-   rm output.log
-fi
+   if [[ -d 'logs' ]]; then
+      if [[ "$(ls -A logs)" ]]; then
+         echo "create backup for logs"
+         bkp="$backup/$timestamp-bkp"
+         mkdir $bkp
+         cp -r logs/* $bkp
+      fi
+   
+      rm -rf logs
+   fi
 
-mkdir logs
-touch output.log
+   if [[ -d 'output.log' ]]; then
+      rm output.log
+   fi
+
+   mkdir logs
+   touch output.log
+}
+
 
 function die() {
    echo "$1"
@@ -33,6 +36,8 @@ function die() {
 }
 
 function fbuild() {
+   doManFile
+
    if [[ ! -d "venv" ]]; then
       python -m venv venv || die "unable to create venv"
    fi
@@ -54,6 +59,8 @@ function fbuild() {
 
 
 function fstart() {
+   doManFile
+   
    if [[ -d "./venv/Scripts" ]]; then
       ./venv/Scripts/python main.py 2> output.log
       if [[ $? -ne 0 ]]; then
@@ -107,6 +114,16 @@ function funinstall() {
    fi
 }
 
+function flogToJson() {
+   if [[ -d "./venv/Scripts" ]]; then
+      ./venv/Scripts/python ./deps/logsJson.py || die "unable to convert logs to json"
+   elif [[ -d "./venv/bin" ]]; then
+      ./venv/bin/python ./deps/logsJson.py  || die "unable to convert logs to json"
+   else 
+      die "Virtual environment not found. Build first"
+   fi
+}
+
 if [[ "$1" == "build" ]]; then
    fbuild
 elif [[ "$1" == "start" ]]; then
@@ -119,6 +136,8 @@ elif [[ "$1" == "uninstall" ]]; then
    funinstall $2
 elif [[ "$1" == "rbkp" ]]; then
    rm -rf "$backup"
+elif [[ "$1" == "ltj" ]]; then
+   flogToJson
 else
    echo "build       - build the service, this will activate virtual environment and install dependencies"
    echo "start       - start services"
@@ -126,4 +145,5 @@ else
    echo "install     - install neccessary dependencies. Usage: ./svc.sh install <package-name> | ./svc.sh install cv2"
    echo "uninstall   - uninstall neccessary dependencies. Usage: ./svc.sh uninstall <package-name> | ./svc.sh uninstall cv2"
    echo "rbkp        - remove backup folder"
+   echo "ltj         - convert all logs from folder logs and backup-logs on services and also DownloadedLogs folder imported from unity"
 fi

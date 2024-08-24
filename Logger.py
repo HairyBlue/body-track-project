@@ -38,13 +38,13 @@ class JsonFormatter(logging.Formatter):
    def format(self, record):
 
       log_record = {
-         'timestamp': self.formatTime(record, self.datefmt),
-         'level': record.levelname,
-         'message': record.getMessage(),
-         # 'module': record.module,
-         # 'function': record.funcName,
-         # 'line': record.lineno,
-         # 'name': record.name,
+         "timestamp": self.formatTime(record, self.datefmt),
+         "level": record.levelname,
+         "message": record.getMessage(),
+         # "module": record.module,
+         # "function": record.funcName,
+         # "line": record.lineno,
+         # "name": record.name,
       }
 
       for field in self.extra_fields:
@@ -60,13 +60,13 @@ class SVCJsonFormatter(logging.Formatter):
    def format(self, record):
       
       log_record = {
-         'timestamp': self.formatTime(record, self.datefmt),
-         'level': record.levelname,
-         'message': record.getMessage(),
-         'module': record.module,
-         'function': record.funcName,
-         'line': record.lineno,
-         'name': record.name,
+         "timestamp": self.formatTime(record, self.datefmt),
+         "level": record.levelname,
+         "message": record.getMessage(),
+         "module": record.module,
+         "function": record.funcName,
+         "line": record.lineno,
+         "name": record.name,
       }
 
       for field in self.extra_fields:
@@ -91,7 +91,7 @@ class DateRotatingFileHandler(RotatingFileHandler):
       
       os.rename(self.baseFilename, new_log_file_path)
 
-      self.mode = 'a'
+      self.mode = "a"
       self.stream = self._open()
 
 
@@ -163,13 +163,13 @@ def calc_time_and_log(topic=None, start_time=0, end_time=0):
    time_difference_ms = (end_time - start_time) * 1000
    
    args = {
-      'start_time': start_time,
-      'end_time': end_time,
-      'time_difference_ms': round(time_difference_ms, 2),
-      'topic': topic
+      "start_time": start_time,
+      "end_time": end_time,
+      "time_difference_ms": round(time_difference_ms, 2),
+      "topic": topic
    }
 
-   extra_fields = ['start_time', 'end_time', 'time_difference_ms', 'topic']
+   extra_fields = ["start_time", "end_time", "time_difference_ms", "topic"]
 
    logger = setup_logger_rts(extra_fields=extra_fields)
 
