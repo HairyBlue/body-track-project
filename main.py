@@ -96,7 +96,7 @@ def adjust_orientation(frame):
     # return cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
 
 
-def process_frame(frame, trackType):
+def process_frame(frame, trackType, writer):
     results = None
     image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     image.flags.writeable = False
@@ -141,7 +141,7 @@ def process_frame(frame, trackType):
             results =  calculate_position_v2(trackType, args)
 
             if startQuiz:
-                start_quiz_func(args, args2, trackType, results, currentUser, send_user_message)
+                start_quiz_func(args, args2, trackType, results, currentUser, send_user_message, writer)
         
     return results, image
 
@@ -260,7 +260,7 @@ async def handle_client(reader, writer):
                     typeSelected = default_settings["debug_organ"]
 
                 if typeSelected is not None:
-                    results, image = await loop.run_in_executor(None, process_frame, adjustedFrame, typeSelected.lower())
+                    results, image = await loop.run_in_executor(None, process_frame, adjustedFrame, typeSelected.lower(), writer)
                     if results is not None:    
                         if isinstance(results, str) and results == default_settings["err_distance"]:
                             message = "The person is not at the proper distance. Please move closer or farther to adjust to the correct distance."

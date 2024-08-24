@@ -100,10 +100,6 @@ class GestureCommon(BodyLandmarkPosition):
         return calc_wrist
     
 
-    # def calculate_chosen_organ(self, organ_name , organ_position, hand_position):
-    #     print(organ_name, organ_position, hand_position)
-
-
 class HandLandmarkPostion:
     def __init__(self, landmarks, handness, mp_hands, cv2, image):
         self.landmarks = landmarks
@@ -145,7 +141,7 @@ class HandLandmarkPostion:
         return (x, y, z)
     
 
-def start_quiz_func(args, args2, results, currentUser, send_user_message):
+def start_quiz_func(args, args2, trackType, results, currentUser, send_user_message, writter):
     try:
         global quizz_started
         common = GestureCommon(**args)
@@ -153,12 +149,10 @@ def start_quiz_func(args, args2, results, currentUser, send_user_message):
         hands_up = common.check_hands_up()
         crossed_arm = common.check_crossed_arms()
 
-
         if not quizz_started:
             if hands_up is not None:
                 if hands_up:
                     quizz_started = hands_up
-                
 
         if quizz_started:
             end_quizz = False
@@ -173,33 +167,48 @@ def start_quiz_func(args, args2, results, currentUser, send_user_message):
                 hands_info = hand_landmark.get_hand_info()
 
                 organ_quizz = default_settings["organs_quizz"]
-                selected_organ = default_settings["debug_organ"]
-
-                oz = organ_quizz[selected_organ]
+                organ_selected = organ_quizz[trackType]
 
                 if hands_info is not None:
                     calc_middle_finger_mcp = []
                     for hand_info in hands_info:
                         middle_finger_mcp = hand_landmark.get_landmark("MIDDLE_FINGER_MCP", hand_info["idx"])
                         # print(hand_info["label"], " => ", hand_landmark.calculate_position(middle_finger_mcp))
-                        mcp_dict = {
-                            "hand": hand_info["label"],
-                            "calc": middle_finger_mcp
-                        }
-
+                        mcp_dict = { "hand": hand_info["label"], "calc": middle_finger_mcp }
                         calc_middle_finger_mcp.append(mcp_dict)
                     
 
                     if results is not None:
-                        if isinstance(results, str) and results == default_settings["err_distance"]:
-                            print("The person is not at the proper distance. Please move closer or farther to adjust to the correct distance.")
-
-                        else:    
+                        # already handle
+                        # if isinstance(results, str) and results == default_settings["err_distance"]:
+                        #     print("The person is not at the proper distance. Please move closer or farther to adjust to the correct distance.")
+                                
+                        if not isinstance(results, str):    
                             common_position, unity_position = results
-                            if common_position:
-                                print(calc_middle_finger_mcp, "\n",  common_position, "\n\n")
-    
-                 
+                            calc_data = []
+
+                            for calc in calc_middle_finger_mcp:
+                                res = do_calc_diff(calc["calc"], common_position)
+                                calc["result"] = res
+                                calc_data.append(calc)      
+                            
+                            if organ_selected["with_both_hand"]:
+                                if len(calc_data) == 2:
+                                    print(calc_data)
+                            elif not organ_selected["with_both_hand"]:
+                                for data in calc_data:
+                                    if data["hand"] == organ_selected["which_hand"]:
+                                        print(calc_data)
+                                    elif organ_selected["which_hand"] == "NONE":
+                                        print(calc_data)
+
+
     except Exception as e:
         print(e)
- 
+
+
+def do_calc_diff(calc_mcp, common_position): 
+    x = abs(calc_mcp[0]) - abs(common_position[0])
+    y = abs(calc_mcp[1]) - abs(common_position[1])
+
+    return (x, y)

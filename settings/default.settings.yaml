@@ -28,26 +28,26 @@ settings:
   # organs: ["brain", "heart", "lungs", "kidney", "liver", "stomach", "intestine"]
   organs_quizz:
     brain: 
-      both_hand: False
-      which_hand: ["Left", "Right"]
+      with_both_hand: False
+      which_hand: "NONE"
     heart:
-      both_hand: False
-      which_hand: ["Left", "Right"]
+      with_both_hand: False
+      which_hand: "NONE"
     lungs:
-      both_hand: True
-      which_hand: ["Left", "Right"]
+      with_both_hand: True
+      which_hand: "BOTH"
     kidney:
-      both_hand: True
-      which_hand: ["Left", "Right"]
+      with_both_hand: True
+      which_hand: "BOTH"
     liver:
-      both_hand: False
-      which_hand: ["Right"]
+      with_both_hand: False
+      which_hand: "Right"
     stomach:
-      both_hand: False
-      which_hand: ["Left"]
+      with_both_hand: False
+      which_hand: "Left"
     intestine:
-      both_hand: True
-      which_hand: ["Left", "Right"]
+      with_both_hand: True
+      which_hand: "BOTH"
 
   pose_landmarks:
     [
