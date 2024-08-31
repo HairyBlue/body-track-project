@@ -5,9 +5,24 @@ This project demonstrates the use of body tracking in mobile augmented reality t
 - [Python](https://www.python.org/downloads/) (version 3.8 or higher)
 - [Git](https://git-scm.com/downloads) (required for running bash scripts on Windows)
 
+## Easy way to setup and run the service (°o°:)
+### Running Services with Bash (svc.sh) 
+For users on Windows, it's recommended to use Git Bash to execute bash scripts. This script automates building and managing the application services.
 
+### Building services (⌐■_■)
+To build the necessary components of the application, execute:
+``` bash
+./svc.sh build
+```
 
-## Setting Up the Virtual Environment (O_O;) 
+### Start services (￣ー￣)
+To start the application services, run:
+``` bash
+./svc.sh start
+```
+
+## Manual way to setup and run the service (O_O;) 
+### Setting Up the Virtual Environment 
 To ensure consistency and manage dependencies, a Python virtual environment is recommended. Follow these steps to set up and activate the virtual environment.
 
 ### Create the Virtual Environment (ᵔ ͜ʖ ͡ᵔ)
@@ -54,21 +69,6 @@ venv/bin/activate -m pip install -r requirements.txt
 To launch the application and start the body tracking service, run:
 ```bash
 python main.py
-```
-
-## Running Services with Bash (svc.sh) (°o°:)
-For users on Windows, it's recommended to use Git Bash to execute bash scripts. This script automates building and managing the application services.
-
-### Building services (⌐■_■)
-To build the necessary components of the application, execute:
-``` bash
-./svc.sh build
-```
-
-### Start services (￣ー￣)
-To start the application services, run:
-``` bash
-./svc.sh start
 ```
 
 ## Deactivate the virtual environment (￣▽￣*)ゞ
