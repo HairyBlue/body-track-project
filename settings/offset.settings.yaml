@@ -49,11 +49,11 @@ settings:
       brain:
         common:
           x_offset: 0
-          y_offset: -20
+          y_offset: -25
           z_offset: 4
         unity:
           x_offset: 0
-          y_offset: -0.065
+          y_offset: 0.65
           z_offset: 20
         calibration:
           minimum: 10.20
@@ -81,7 +81,7 @@ settings:
           z_offset: 4
         unity:
           x_offset: 0
-          y_offset: -1.5
+          y_offset: -0.5
           z_offset: 20
         calibration:
           minimum: 10.20
@@ -109,7 +109,7 @@ settings:
           z_offset: 4
         unity:
           x_offset: 0
-          y_offset: -1.5
+          y_offset: -0.5
           z_offset: 20
         calibration:
           minimum: 10.20
@@ -133,11 +133,11 @@ settings:
       kidney:
         common:
           x_offset: 0
-          y_offset: -90
+          y_offset: -80
           z_offset: 4
         unity:
           x_offset: 0
-          y_offset: -2.25
+          y_offset: -1.80
           z_offset: 20
         calibration:
           minimum: 10.20
@@ -160,21 +160,21 @@ settings:
 
       liver:
         common:
-          x_offset: -0.8
-          y_offset: -2
+          x_offset: -30
+          y_offset: -100
           z_offset: 4
         unity:
           x_offset: -0.8
-          y_offset: -2
+          y_offset: -1.40
           z_offset: 20
         calibration:
           minimum: 10.20
           maximum: 19.80
           y_offset:
-            enable: False
+            enable: True
             operator: "subtraction"
-            common: 0
-            unity: 0
+            common: 15
+            unity: 0.15
           x_offset:
             enable: False
             operator: "subtraction"
@@ -188,21 +188,21 @@ settings:
 
       stomach:
         common:
-          x_offset: 0.85
-          y_offset: -2.5
+          x_offset: 10
+          y_offset: -90
           z_offset: 4
         unity:
-          x_offset: 0.85
-          y_offset: -2.5
-          z_offset: 4
+          x_offset: 0.3
+          y_offset: -1.65
+          z_offset: 20
         calibration:
           minimum: 10.20
           maximum: 19.80
           y_offset:
-            enable: False
+            enable: True
             operator: "subtraction"
-            common: 0
-            unity: 0
+            common: 15
+            unity: 0.15
           x_offset:
             enable: False
             operator: "subtraction"
@@ -217,20 +217,20 @@ settings:
       intestine:
         common:
           x_offset: 0
-          y_offset: -2.8
+          y_offset: -30
           z_offset: 4
         unity:
           x_offset: 0
-          y_offset: -2.8
-          z_offset: 4
+          y_offset: -2.25
+          z_offset: 20
         calibration:
           minimum: 10.20
           maximum: 19.80
           y_offset:
-            enable: False
+            enable: True
             operator: "subtraction"
-            common: 0
-            unity: 0
+            common: 15
+            unity: 0.15
           x_offset:
             enable: False
             operator: "subtraction"

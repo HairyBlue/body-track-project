@@ -1,8 +1,8 @@
 settings:
   main_runner: "unity" # unity, debug, debug_quizz
-  debug_organ: "brain" # brain,  heart, lungs, kidney, liver, stomach, intestine, body
+  debug_organ: "intestine" # brain,  heart, lungs, kidney, liver, stomach, intestine, body
 
-  image_flip: True # Flip image, since cv2 mirror the image
+  image_flip: False # Flip image, since cv2 mirror the image
   adjust_orientation: True # If main runner is unity => True if mobile device used and False when using webcam
   enable_adjustments_settings: False # True or False
   override_type_selected: True # Override the selected organ in unity if debug mode on
