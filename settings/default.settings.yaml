@@ -25,7 +25,7 @@ settings:
       min_detection_confidence: 0.5
       min_tracking_confidence: 0.5
 
-  # organs: ["brain", "heart", "lungs", "kidney", "liver", "stomach", "intestine"]
+  track_supported: ["brain", "heart", "lungs", "kidney", "liver", "stomach", "intestine"]
   organs_quizz:
     brain: 
       with_both_hand: False

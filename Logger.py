@@ -63,10 +63,10 @@ class SVCJsonFormatter(logging.Formatter):
          "timestamp": self.formatTime(record, self.datefmt),
          "level": record.levelname,
          "message": record.getMessage(),
-         "module": record.module,
-         "function": record.funcName,
-         "line": record.lineno,
-         "name": record.name,
+         # "module": record.module,
+         # "function": record.funcName,
+         # "line": record.lineno,
+         # "name": record.name,
       }
 
       for field in self.extra_fields:

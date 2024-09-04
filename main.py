@@ -4,6 +4,7 @@ import mediapipe as mp
 import json
 import asyncio
 import time
+import math
 
 from BodyLandmarkPosition import calculate_position, calculate_position_v2
 from Quizz import start_quiz_func
@@ -11,12 +12,13 @@ from Logger import calc_time_and_log, setup_logger_svc
 from config import svc_configs
 from datetime import datetime, timezone
 
+# --------------------------------------------------------------------------------------------
 svc_logger = setup_logger_svc()
 
 configs = svc_configs()
 default_settings  = configs["default"]["settings"]
 main_runner = default_settings["main_runner"]
-
+track_supported = default_settings["track_supported"]
 
 mp_settings_pose = default_settings["mp"]["pose"]
 mp_settings_hands = default_settings["mp"]["hands"]
@@ -29,64 +31,46 @@ pose = mp_pose.Pose(**mp_settings_pose)
 mp_hands = mp.solutions.hands
 hands = mp_hands.Hands(**mp_settings_hands)
 
-currentAddr = None
-currentUser = None
+# --------------------------------------------------------------------------------------------
+#  GLOBALS
+# STORE WRITER FOR CLIENT
+clients = {}
 typeSelected = None
-startQuiz = False
-
-user_queue = []
-unique_users = set()
-
 start_time=0
+# --------------------------------------------------------------------------------------------
 
-def pop_user(connectedUser):
-    if user_queue:
-        idx = user_queue.index(connectedUser)
-        user = user_queue.pop(idx)
-        unique_users.remove(user)
-        print(f"User '{user}' removed from unforseen situation. Queue: {user_queue}")
-        return user
-    print("Queue is empty.")
-    return None
-
-def dequeue_user():
-    if user_queue:
-        user = user_queue.pop(0)
-        unique_users.remove(user)
-        print(f"User '{user}' removed from the queue. Queue: {user_queue}")
-        return user
-    print("Queue is empty.")
-    return None
-
-
-def register_user(user, msg, addr):
-    global currentAddr
-    global currentUser
-    global typeSelected
-    global startQuiz
-
+def register_user(userUUID, userRole, addr, writer):
     try:
-        if user and user not in unique_users:
-            user_queue.append(user)
-            unique_users.add(user)
-            svc_logger.info(str(user_queue))
-        
-        if user_queue.index(user) == 0:
+        checkUser = clients.get(userUUID, None)
 
-            if msg == "START_QUIZZ":
-                startQuiz = True
-            if msg == "END_QUIZZ":
-                startQuiz = False
+        if checkUser:
+            if clients[userUUID]['role'] != userRole:
+                svc_logger.info(f"user {userUUID} change role from {clients[userUUID]['role']} to {userRole}")
+                clients[userUUID]['role'] = userRole
 
-            if currentUser is None:
-                currentUser = user  
-                typeSelected = msg
-                currentAddr = addr
+            if clients[userUUID]['port'] != addr[1]:
+                svc_logger.info(f"user {userUUID} reconnect from prev port {clients[userUUID]['port']} to {addr}")
+                clients[userUUID]['port'] = addr[1]
+                clients[userUUID]['writer'] = writer
+                
 
-            # print(currentUser)
+        if checkUser is None:
+            clients[userUUID] = {
+                'role': userRole,
+                'port': addr[1],
+                'writer': writer
+            }
 
+            svc_logger.info("register user: " + str([userUUID, userRole]))
+
+        # user_queue.append(user)
+        # unique_users.add(user)
+        # if user_queue.index(user) == 0:
+        #     if currentUser is None:
+        #         currentUser = user  
     except Exception as e:
         print("Error in registering user")
+
 
 def adjust_orientation(frame):
     # Check if the image is in portrait mode
@@ -140,8 +124,8 @@ def process_frame(frame, trackType, writer):
             mp_drawing.draw_landmarks(image, landmarks, mp_pose.POSE_CONNECTIONS)
             results =  calculate_position_v2(trackType, args)
 
-            if startQuiz:
-                start_quiz_func(args, args2, trackType, results, currentUser, send_user_message, writer)
+            # if startQuiz:
+            #     start_quiz_func(args, args2, trackType, results, currentUser, send_user_message, writer)
         
     return results, image
 
@@ -157,11 +141,11 @@ async def receive_json(reader):
         json_str = json_data.decode('utf-8')
        
         json_msg = json.loads(json_str)
-        data_type = 'json'
-        return data_type, json_msg  
+        return json_msg  
     except asyncio.IncompleteReadError:
-        return None, None
-
+        return None
+    except Exception as e:
+        return None
 
 async def receive_frame(reader):
     try:
@@ -172,17 +156,23 @@ async def receive_frame(reader):
 
         frame_array = np.frombuffer(frame_data, dtype=np.uint8)
         frame = cv2.imdecode(frame_array, cv2.IMREAD_COLOR)
+
         return frame
     
     except asyncio.IncompleteReadError:
-        return None, None
+        return None
+    except Exception as e:
+        return None
 
 
-async def send_position(writer, unity_position, addr):
+async def send_position(userUUID, unity_position):
     global start_time
-    global currentAddr
+
     try:
-        if currentAddr == addr:
+        checkUser = clients.get(userUUID, None)
+        if checkUser:
+            writer = clients[userUUID]['writer']
+
             data = json.dumps(unity_position).encode('utf-8')
             length_prefix = len(data).to_bytes(4, byteorder='little')
             writer.write(length_prefix + data)
@@ -194,117 +184,159 @@ async def send_position(writer, unity_position, addr):
     except Exception as e:
         print(f"Error sending position: {e}")
 
-async def send_queue_msg(writer, connectedUser):
+async def send_json_message(userUUID, json_msg):
+    checkUser = clients.get(userUUID, None)
+
     try:
-        queueNum =  user_queue.index(connectedUser) + 1
-        message = f"There is still user using the body tracking. Your queue number is {queueNum} from {len(user_queue)} number of user/s. Please wait on your turn..."
-        queueMsq = {'uuid': connectedUser, 'queue': message}
+        if checkUser:
+            writer = clients[userUUID]['writer']
+            if writer.is_closing():
+                return
+            
+            data = json.dumps(json_msg).encode('utf-8')
+            length_prefix = len(data).to_bytes(4, byteorder='little')
 
-        data = json.dumps(queueMsq).encode('utf-8')
-        length_prefix = len(data).to_bytes(4, byteorder='little')
+            writer.write(length_prefix + data)
+            await writer.drain()
 
-        writer.write(length_prefix + data)
-        await writer.drain()
+    except (ConnectionResetError, BrokenPipeError, OSError) as e:
+        print(f"Error sending json message: {e}. The client might have disconnected.")
+        await handle_disconnection(userUUID, writer)
 
     except Exception as e:
-        print(f"Error sending queue message: {e}")
+        print(f"Error sending json message: {e}")
 
-async def send_user_message(writer, connectedUser, message):
+
+async def handle_disconnection(userUUID, writer):
     try:
-        # message = "The person is not at the proper distance. Please move closer or farther to adjust to the correct distance."
-        json_msg = {'uuid': connectedUser, 'queue': message}
-
-        data = json.dumps(json_msg).encode('utf-8')
-        length_prefix = len(data).to_bytes(4, byteorder='little')
-
-        writer.write(length_prefix + data)
-        await writer.drain()
-
+        if writer and not writer.is_closing():
+            writer.close()
+            await writer.wait_closed()
+        print(f"Writer for {userUUID} closed.")
     except Exception as e:
-        print(f"Error sending queue message: {e}")
+        print(f"Error closing writer for {userUUID}: {e}")
+    finally:
+        if userUUID in clients:
+            print(f"Removing {userUUID} from clients.")
+            del clients[userUUID]
+
 
 async def handle_client(reader, writer):
     global start_time
-    global currentUser
-    global currentAddr
     global typeSelected
-    global startQuiz
 
     addr = writer.get_extra_info('peername')
-    loop = asyncio.get_running_loop()
-    connectedUser = ""
+    # loop = asyncio.get_running_loop()
+    is_duplicate_host = False
+    position_rotation = None
 
     try:
         while True:
             start_time = time.time()
-            addr = writer.get_extra_info('peername')
 
-            json_type, jsonMsg = await receive_json(reader)
+            jsonMsg = await receive_json(reader)
             frame = await receive_frame(reader)
 
-            if jsonMsg and json_type == 'json':
-                connectedUser = jsonMsg.get('uuid', '')
+            if jsonMsg:
+                userUUID = jsonMsg.get('uuid', '')
+                userRole = jsonMsg.get('role', '')
                 msg_text = jsonMsg.get('message', '')
-                register_user(connectedUser, msg_text, addr)
+                position = jsonMsg.get('position', None)
+                rotation = jsonMsg.get('rotation', None)
+               
+                if msg_text == "PING":
+                    register_user(userUUID, userRole, addr, writer)
+                    # pong_msg = { 'message' : "PONG"}
+                    # await send_json_message(userUUID, pong_msg)
 
-            if currentUser == connectedUser:
+            count_host = 0
+            for client in clients:
+                if clients[client]['role'] == "Host":
+                    count_host += 1
 
-                if frame is None:
-                    break
-                
-                adjustedFrame = frame
+            if count_host > 1:
+                is_duplicate_host = True
+                # duplicate_host = { 'message' : "DUPLICATE_HOST"}
+                # await send_json_message(userUUID, duplicate_host)
 
-                if default_settings["adjust_orientation"]:
-                    adjustedFrame = adjust_orientation(frame=frame);
-                if default_settings["override_type_selected"]:
-                    typeSelected = default_settings["debug_organ"]
+            if not is_duplicate_host:
+                for client in clients:
+                    if clients[client]['role'] == "Host":
 
-                if typeSelected is not None:
-                    results, image = await loop.run_in_executor(None, process_frame, adjustedFrame, typeSelected.lower(), writer)
-                    if results is not None:    
-                        if isinstance(results, str) and results == default_settings["err_distance"]:
-                            message = "The person is not at the proper distance. Please move closer or farther to adjust to the correct distance."
-                            await send_user_message(writer, connectedUser, message)
-                        else:
-                            common_position, unity_position = results
-                            await send_position(writer, unity_position=unity_position, addr=addr)
+                        if frame is None:
+                            continue
 
-                if image is not None:
-                    cv2.imshow(addr[0], image)
-                    cv2.waitKey(1)
+                        adjustedFrame = frame
+                        typeSelected = msg_text
 
-            else:
-                if len(connectedUser) > 0:
-                    await send_queue_msg(writer, connectedUser)
-            await asyncio.sleep(0.012)
+                        if default_settings["adjust_orientation"]:
+                            adjustedFrame = adjust_orientation(frame=frame);
+                        if default_settings["override_type_selected"]:
+                            typeSelected = default_settings["debug_organ"]
+
+                        if isinstance(track_supported, list):
+                            if typeSelected in track_supported:
+                                if position and rotation:
+
+                                    position_rotation = {
+                                        "positionX": position['x'],
+                                        "positionY": position['y'],
+                                        "positionZ": position['z'],
+
+                                        "rotationX": rotation['x'],
+                                        "rotationY": rotation['y'],
+                                        "rotationZ": rotation['z']
+                                    }
+
+    
+                    elif clients[client]['role'] == "Guest":
+                        if position_rotation:
+                            await send_json_message(client, position_rotation)
+
+                            # results, image = await loop.run_in_executor(None, process_frame, adjustedFrame, typeSelected.lower(), writer)
+                            # if results is not None:    
+                            #     if isinstance(results, str) and results == default_settings["err_distance"]:
+                                    
+                            #         message = "The person is not at the proper distance. Please move closer or farther to adjust to the correct distance."
+                            #         error_message = { 'message' : message}
+                            #         await send_json_message(userUUID, error_message)
+                            #     else:
+                            #         common_position, unity_position = results
+                            #         await send_position(userUUID, unity_position)
+
+                            # if image is not None:
+                            #     cv2.imshow(addr[0], image)
+                            #     cv2.waitKey(1)
+
+
+            await asyncio.sleep(0.05)
 
     except Exception as e:
         print(f"Exception in client thread: {e}")
-        cv2.destroyWindow(addr[0])
+        # cv2.destroyWindow(addr[0])
     finally:
         writer.close()
         await writer.wait_closed()
         print(f"Connection to {addr} closed.")
-        # dequeue current user
+        # # # dequeue current user
 
-        if currentUser == user_queue[0]:
-            dequeue_user()
-            startQuiz = False
-            currentAddr = None
-            currentUser = None
-            typeSelected = None
+        # if currentUser == user_queue[0]:
+        #     dequeue_user()
+        #     currentUser = None
+        #     typeSelected = None
 
-            if user_queue:
-                currentUser = user_queue[0]  
-        else:
-            # if other user quit or any error happen pop them, dont remove the current user
-            pop_user(connectedUser)
+        #     if user_queue:
+        #         currentUser = user_queue[0]  
+        # else:
+        #     # if other user quit or any error happen pop them, dont remove the current user
+        #     pop_user(connectedUser)
 
 
 async def cb(reader, writer):
     addr = writer.get_extra_info('peername')
     print(f'Accepted connection from {addr}')
     await handle_client(reader, writer)
+
 
 
 async def unity_stream():
