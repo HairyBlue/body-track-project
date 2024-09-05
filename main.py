@@ -64,7 +64,7 @@ def register_user(userUUID, userRole, addr, writer):
             svc_logger.info("register user: " + str([userUUID, userRole]))
 
     except Exception as e:
-        print("Error in registering user")
+        svc_logger.info("Error in registering user")
 
 
 def adjust_orientation(frame):
@@ -165,11 +165,12 @@ async def receive_frame(reader):
 # send UNITY POSITION to HOST
 async def send_position(userUUID, unity_position):
     global start_time
+    checkUser = clients.get(userUUID, None)
 
     try:
-        checkUser = clients.get(userUUID, None)
         if checkUser:
             writer = clients[userUUID]['writer']
+            role = clients[userUUID]['role']
 
             data = json.dumps(unity_position).encode('utf-8')
             length_prefix = len(data).to_bytes(4, byteorder='little')
@@ -180,8 +181,14 @@ async def send_position(userUUID, unity_position):
 
             await writer.drain()
 
+    except (ConnectionResetError, BrokenPipeError, OSError) as e:
+        # print(f"Error sending json message: {e}. The client might have disconnected.")
+        svc_logger.info(f"Error sending json message: {e}. The client might have disconnected.")
+        await handle_disconnection(userUUID, role, writer)
+
     except Exception as e:
-        print(f"Error sending position: {e}")
+        # print(f"Error sending json message: {e}")
+        svc_logger.info(f"Error sending json message: {e}")
 
 
 async def send_json_message(userUUID, json_msg):
@@ -190,6 +197,8 @@ async def send_json_message(userUUID, json_msg):
     try:
         if checkUser:
             writer = clients[userUUID]['writer']
+            role = clients[userUUID]['role']
+
             if writer.is_closing():
                 return
             
@@ -200,24 +209,29 @@ async def send_json_message(userUUID, json_msg):
             await writer.drain()
 
     except (ConnectionResetError, BrokenPipeError, OSError) as e:
-        print(f"Error sending json message: {e}. The client might have disconnected.")
-        await handle_disconnection(userUUID, writer)
-
+        # print(f"Error sending json message: {e}. The client might have disconnected.")
+        svc_logger.info(f"Error sending json message: {e}. The client might have disconnected.")
+        await handle_disconnection(userUUID, role, writer)
     except Exception as e:
-        print(f"Error sending json message: {e}")
+        # print(f"Error sending json message: {e}")
+        svc_logger.info(f"Error sending json message: {e}")
 
 
-async def handle_disconnection(userUUID, writer):
+async def handle_disconnection(userUUID, role, writer):
     try:
-        if writer and not writer.is_closing():
+        if role and writer and not writer.is_closing():
             writer.close()
             await writer.wait_closed()
-        print(f"Writer for {userUUID} closed.")
+            # print(f"Writer for {userUUID} closed.")
+            svc_logger.info(f"Writer for [{userUUID}, {role}] closed.")
+
     except Exception as e:
-        print(f"Error closing writer for {userUUID}: {e}")
+        # print(f"Error closing writer for {userUUID}: {e}")
+        svc_logger.info(f"Error closing writer for {userUUID}: {e}")
     finally:
         if userUUID in clients:
-            print(f"Removing {userUUID} from clients.")
+            # print(f"Removing {userUUID} from clients.")
+            svc_logger.info(f"Removing [{userUUID}, {role}] from clients.")
             del clients[userUUID]
 
 
@@ -318,7 +332,8 @@ async def handle_client(reader, writer):
 
 async def cb(reader, writer):
     addr = writer.get_extra_info('peername')
-    print(f'Accepted connection from {addr}')
+    # print(f'Accepted connection from {addr}')
+    svc_logger.info(f'Accepted connection from {addr}')
     await handle_client(reader, writer)
 
 async def unity_stream():
