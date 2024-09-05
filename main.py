@@ -5,6 +5,7 @@ import json
 import asyncio
 import time
 import math
+import traceback
 
 from BodyLandmarkPosition import calculate_position, calculate_position_v2
 from Quizz import start_quiz_func
@@ -39,7 +40,9 @@ typeSelected = None
 start_time=0
 # --------------------------------------------------------------------------------------------
 
-def register_user(userUUID, userRole, addr, writer):
+async def register_user(userUUID, userRole, addr, writer):
+    global clients
+
     try:
         checkUser = clients.get(userUUID, None)
 
@@ -49,14 +52,17 @@ def register_user(userUUID, userRole, addr, writer):
                 clients[userUUID]['role'] = userRole
 
             if clients[userUUID]['port'] != addr[1]:
-                svc_logger.info(f"user {userUUID} reconnect from prev port {clients[userUUID]['port']} to {addr}")
-                clients[userUUID]['port'] = addr[1]
-                clients[userUUID]['writer'] = writer
-                
-
+                if clients[userUUID]['role'] == "Host":
+                    svc_logger.info(f"user [{userUUID}, {clients[userUUID]['role']}] reconnect from prev port {clients[userUUID]['port']} to {addr}, need to remove all clients and reconnect them back")
+                    clients = {}
+                elif clients[userUUID]['role'] == "Guest":
+                    svc_logger.info(f"user[{userUUID}, {clients[userUUID]['role']}] reconnect from prev port {clients[userUUID]['port']} to {addr}, need to remove from clients and reconnect back")
+                    del clients[userUUID]
+ 
         if checkUser is None:
             clients[userUUID] = {
                 'role': userRole,
+                'address': addr[0],
                 'port': addr[1],
                 'writer': writer
             }
@@ -65,6 +71,7 @@ def register_user(userUUID, userRole, addr, writer):
 
     except Exception as e:
         svc_logger.info("Error in registering user")
+        traceback.print_exc()
 
 
 def adjust_orientation(frame):
@@ -252,14 +259,15 @@ async def handle_client(reader, writer):
             frame = await receive_frame(reader)
 
             if jsonMsg:
-                userUUID = jsonMsg.get('uuid', '')
-                userRole = jsonMsg.get('role', '')
-                msg_text = jsonMsg.get('message', '')
+                userUUID = jsonMsg.get('uuid', None)
+                userRole = jsonMsg.get('role', None)
+                msg_text = jsonMsg.get('message', None)
                 position = jsonMsg.get('position', None)
                 rotation = jsonMsg.get('rotation', None)
                
                 if msg_text == "PING":
-                    register_user(userUUID, userRole, addr, writer)
+                    if userUUID and userRole and msg_text:
+                        await register_user(userUUID, userRole, addr, writer)
                     # # No Need to send back PONG
                     # pong_msg = { 'message' : "PONG"}
                     # await send_json_message(userUUID, pong_msg)
@@ -268,12 +276,12 @@ async def handle_client(reader, writer):
             for client in clients:
                 if clients[client]['role'] == "Host":
                     count_host += 1
-                    if count_host > 1:
-                        is_duplicate_host = True
-                        duplicate_host = { 'uuid': client, 'message' : "There are more than one (1) host in this server, please choose only one"}
-                        await send_json_message(client, duplicate_host)
 
-            if not is_duplicate_host:
+            if count_host > 1:
+                duplicate_host = { 'uuid': client, 'message' : "There are more than one (1) host in this server, please choose only one host"}
+                await send_json_message(client, duplicate_host)
+
+            if count_host == 1:
                 for client in clients:
                     if clients[client]['role'] == "Host":
 
