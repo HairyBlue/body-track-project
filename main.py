@@ -63,11 +63,6 @@ def register_user(userUUID, userRole, addr, writer):
 
             svc_logger.info("register user: " + str([userUUID, userRole]))
 
-        # user_queue.append(user)
-        # unique_users.add(user)
-        # if user_queue.index(user) == 0:
-        #     if currentUser is None:
-        #         currentUser = user  
     except Exception as e:
         print("Error in registering user")
 
@@ -80,7 +75,7 @@ def adjust_orientation(frame):
     # return cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
 
 
-def process_frame(frame, trackType, writer):
+def process_frame(frame, trackType):
     results = None
     image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     image.flags.writeable = False
@@ -129,8 +124,8 @@ def process_frame(frame, trackType, writer):
         
     return results, image
 
+# Recieve JSON from clients
 async def receive_json(reader):
-
     try:
         length_prefix = await reader.readexactly(4)
         if not length_prefix:
@@ -141,12 +136,15 @@ async def receive_json(reader):
         json_str = json_data.decode('utf-8')
        
         json_msg = json.loads(json_str)
+
         return json_msg  
+    
     except asyncio.IncompleteReadError:
         return None
     except Exception as e:
         return None
-
+    
+# Recieve Video FRAME from clients
 async def receive_frame(reader):
     try:
         length_prefix = await reader.readexactly(4)
@@ -164,7 +162,7 @@ async def receive_frame(reader):
     except Exception as e:
         return None
 
-
+# send UNITY POSITION to HOST
 async def send_position(userUUID, unity_position):
     global start_time
 
@@ -181,8 +179,10 @@ async def send_position(userUUID, unity_position):
             calc_time_and_log(topic='send_position', start_time=start_time, end_time=end_time)
 
             await writer.drain()
+
     except Exception as e:
         print(f"Error sending position: {e}")
+
 
 async def send_json_message(userUUID, json_msg):
     checkUser = clients.get(userUUID, None)
@@ -226,7 +226,7 @@ async def handle_client(reader, writer):
     global typeSelected
 
     addr = writer.get_extra_info('peername')
-    # loop = asyncio.get_running_loop()
+    loop = asyncio.get_running_loop()
     is_duplicate_host = False
     position_rotation = None
 
@@ -246,6 +246,7 @@ async def handle_client(reader, writer):
                
                 if msg_text == "PING":
                     register_user(userUUID, userRole, addr, writer)
+                    # # No Need to send back PONG
                     # pong_msg = { 'message' : "PONG"}
                     # await send_json_message(userUUID, pong_msg)
 
@@ -253,11 +254,10 @@ async def handle_client(reader, writer):
             for client in clients:
                 if clients[client]['role'] == "Host":
                     count_host += 1
-
-            if count_host > 1:
-                is_duplicate_host = True
-                # duplicate_host = { 'message' : "DUPLICATE_HOST"}
-                # await send_json_message(userUUID, duplicate_host)
+                    if count_host > 1:
+                        is_duplicate_host = True
+                        duplicate_host = { 'uuid': client, 'message' : "There are more than one (1) host in this server, please choose only one"}
+                        await send_json_message(client, duplicate_host)
 
             if not is_duplicate_host:
                 for client in clients:
@@ -276,8 +276,22 @@ async def handle_client(reader, writer):
 
                         if isinstance(track_supported, list):
                             if typeSelected in track_supported:
-                                if position and rotation:
 
+                                results, image = await loop.run_in_executor(None, process_frame, adjustedFrame, typeSelected.lower())
+                                if results is not None:    
+                                    if isinstance(results, str) and results == default_settings["err_distance"]:
+                                        message = "The person is not at the proper distance. Please move closer or farther to adjust to the correct distance."
+                                        error_message = { 'uuid': client, 'message' : message}
+                                        await send_json_message(client, error_message)
+                                    else:
+                                        common_position, unity_position = results
+                                        await send_position(client, unity_position)
+
+                                if image is not None:
+                                    cv2.imshow(addr[0], image)
+                                    cv2.waitKey(1)
+
+                                if position and rotation:
                                     position_rotation = {
                                         "positionX": position['x'],
                                         "positionY": position['y'],
@@ -288,56 +302,24 @@ async def handle_client(reader, writer):
                                         "rotationZ": rotation['z']
                                     }
 
-    
                     elif clients[client]['role'] == "Guest":
                         if position_rotation:
                             await send_json_message(client, position_rotation)
 
-                            # results, image = await loop.run_in_executor(None, process_frame, adjustedFrame, typeSelected.lower(), writer)
-                            # if results is not None:    
-                            #     if isinstance(results, str) and results == default_settings["err_distance"]:
-                                    
-                            #         message = "The person is not at the proper distance. Please move closer or farther to adjust to the correct distance."
-                            #         error_message = { 'message' : message}
-                            #         await send_json_message(userUUID, error_message)
-                            #     else:
-                            #         common_position, unity_position = results
-                            #         await send_position(userUUID, unity_position)
-
-                            # if image is not None:
-                            #     cv2.imshow(addr[0], image)
-                            #     cv2.waitKey(1)
-
-
             await asyncio.sleep(0.05)
-
     except Exception as e:
         print(f"Exception in client thread: {e}")
-        # cv2.destroyWindow(addr[0])
+        cv2.destroyWindow(addr[0])
     finally:
         writer.close()
         await writer.wait_closed()
         print(f"Connection to {addr} closed.")
-        # # # dequeue current user
-
-        # if currentUser == user_queue[0]:
-        #     dequeue_user()
-        #     currentUser = None
-        #     typeSelected = None
-
-        #     if user_queue:
-        #         currentUser = user_queue[0]  
-        # else:
-        #     # if other user quit or any error happen pop them, dont remove the current user
-        #     pop_user(connectedUser)
 
 
 async def cb(reader, writer):
     addr = writer.get_extra_info('peername')
     print(f'Accepted connection from {addr}')
     await handle_client(reader, writer)
-
-
 
 async def unity_stream():
     host = '0.0.0.0'
@@ -348,11 +330,12 @@ async def unity_stream():
 
     svc_msg = f'Server start at {current_time_gmt}, server port: {port}'
     svc_logger.info(svc_msg)
-    # print(svc_msg)
 
     async with server:
         await server.serve_forever()
 
+
+## ------DEBUGGING SECTION---------------------DEBUGGING SECTION-----------------------DEBUGGING SECTION---------------------------- DEBUGGING SECTION ---------------------DEBUGGING SECTION------------------DEBUGGING SECTION----------------------------------------------------------------------------
 def debug_feed():
     cap = cv2.VideoCapture(0)
     while cap.isOpened():
