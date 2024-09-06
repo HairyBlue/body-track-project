@@ -7,7 +7,42 @@ configs = svc_configs()
 default_settings  = configs["default"]["settings"]
 offsets_settings = configs["offsets"]["settings"]
 
+
+"""
+A class for processing and analyzing body landmarks within an image. 
+
+This class uses landmarks detected in images to perform various operations such as:
+- Calculating the aspect ratio of the image and matching it to predefined ratios.
+- Retrieving and validating pairs of landmarks.
+- Calculating positions of organs or other features based on landmark coordinates and calibration data.
+- Converting image coordinates to Unity coordinates for integration with Unity3D.
+- Estimating distances between landmarks and applying calibration for real-world measurements.
+
+Attributes:
+    landmarks: An object containing landmark data from body pose detection.
+    mp_pose: A module or object that provides access to pose landmarks.
+    cv2: The OpenCV library used for image processing tasks.
+    image: The input image on which the landmarks are detected and processed.
+
+Methods:
+    image_shape: Returns the dimensions of the image.
+    determine_aspect_ratio: Calculates and identifies the aspect ratio of the image.
+    cv2_circle: Draws a circle on the image at a specified position.
+    landmark_list: Provides a list of landmark coordinates.
+    is_valid_landmark: Checks if a landmark's coordinates are valid.
+    center: Calculates the midpoint between two landmarks.
+    landmark_pair: Retrieves a pair of landmarks by their names.
+    get_landmark: Retrieves a specific landmark by its name.
+    calculate_organ_position: Computes the position of an organ using landmarks and offsets.
+    calculate_unity_coordinates: Converts image coordinates to Unity coordinates.
+    validate_landmarks_list: Validates the number of landmarks in the list.
+    all_unity_coordinates: Computes Unity coordinates for all landmarks.
+    calculate_pixel_distance: Calculates the pixel distance between two points.
+    calibrate_distance: Converts pixel distance to real-world distance using calibration data.
+    estimate_distance: Estimates the distance between landmarks based on pixel measurements and calibration.
+"""
 class BodyLandmarkPosition:
+
     def __init__(self, landmarks, mp_pose, cv2, image):
         self.landmarks = landmarks
         self.mp_pose = mp_pose
@@ -18,6 +53,69 @@ class BodyLandmarkPosition:
         image_height, image_width, _ = self.image.shape
         return image_height, image_width
     
+    def cv2_circle(self, color=(0, 0, 255), organ_position=None):
+        if organ_position is not None:
+            if len(organ_position) == 2:
+                x, y = organ_position
+                # Ensure x and y are integers
+                x = int(x)
+                y = int(y)
+                
+                self.cv2.circle(self.image, (x, y), 10, color, -1)
+
+    def landmark_list(self):
+        return [(lm.x, lm.y, lm.z) for lm in self.landmarks.landmark]
+    
+    def is_valid_landmark(self, landmark):
+        if not (0 <= landmark[0] <= 1) or not (0 <= landmark[1] <= 1):
+            return False
+        return True
+    
+    def center(self, landmark_pair):
+        c1, c2 = landmark_pair
+        return ((c1[0] + c2[0]) / 2, (c1[1] + c2[1]) / 2, (c1[2] + c2[2]) / 2)
+    
+    def get_landmark(self, landmark_name):
+        landmarks = self.landmark_list()
+        landmark = landmarks[self.mp_pose.PoseLandmark[landmark_name].value]
+        return landmark if 0 <= landmark[0] <= 1 and 0 <= landmark[1] <= 1 else None
+    def validate_landmarks_list(self, landmarks_list):
+        if len(landmarks_list) == 33:
+            # print("Validation passed: 33 landmarks found.")
+            return True
+        else:
+            # print(f"Validation failed: {len(landmarks_list)} landmarks found.")
+            return False
+    
+    def all_unity_coordinates(self, x_offset=0, y_offset=0, z_offset=0, offset_calibration=None, estimate_distance=None):
+        adjusted_landmarks = []
+
+        landmarks_list = self.landmark_list()
+
+        if self.validate_landmarks_list(landmarks_list=landmarks_list):
+            for lm in landmarks_list:
+                adjusted_landmark = self.calculate_unity_coordinates(lm, x_offset, y_offset, z_offset, offset_calibration, estimate_distance)
+                adjusted_landmarks.append(adjusted_landmark)
+
+            return adjusted_landmarks
+        else:
+            return None
+    
+    def calculate_pixel_distance(self, point1, point2):
+        x1, y1 = point1
+        x2, y2 = point2
+        return np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+
+    def calibrate_distance(self, pixel_distance, known_height_pixels, known_height_meters):
+        # Convert pixel distance to real-world distance
+        return (pixel_distance / known_height_pixels) * known_height_meters
+    
+    #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    """
+    Calculates the aspect ratio of the image and compares it with predefined ratios
+    to find the closest match. The algorithm involves computing the aspect ratio of 
+    the image and checking it against a list of acceptable ratios within a given tolerance.
+    """
     def determine_aspect_ratio(self):
         image_height, image_width = self.image_shape()
         # landscape_aspect_ratio = image_width / image_height
@@ -41,29 +139,13 @@ class BodyLandmarkPosition:
            
         print("Aspect Ratio Not Identified. [image_height, image_width, aspect_ratio] =>", [image_height, image_width, aspect_ratio])
         return None
+    
 
-    def cv2_circle(self, color=(0, 0, 255), organ_position=None):
-        if organ_position is not None:
-            if len(organ_position) == 2:
-                x, y = organ_position
-                # Ensure x and y are integers
-                x = int(x)
-                y = int(y)
-                
-                self.cv2.circle(self.image, (x, y), 10, color, -1)
-
-    def landmark_list(self):
-        return [(lm.x, lm.y, lm.z) for lm in self.landmarks.landmark]
-    
-    def is_valid_landmark(self, landmark):
-        if not (0 <= landmark[0] <= 1) or not (0 <= landmark[1] <= 1):
-            return False
-        return True
-    
-    def center(self, landmark_pair):
-        c1, c2 = landmark_pair
-        return ((c1[0] + c2[0]) / 2, (c1[1] + c2[1]) / 2, (c1[2] + c2[2]) / 2)
-    
+    #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    """
+    Retrieves and validates pairs of landmarks from the landmark list. The algorithm checks
+    if the landmarks are valid and then returns the coordinates of the specified pair.
+    """
     def landmark_pair(self, landmark_name1, landmark_name2):
         landmark_list = self.landmark_list()
         l1 = landmark_list[self.mp_pose.PoseLandmark[landmark_name1].value]
@@ -74,11 +156,13 @@ class BodyLandmarkPosition:
   
         return l1, l2
     
-    def get_landmark(self, landmark_name):
-        landmarks = self.landmark_list()
-        landmark = landmarks[self.mp_pose.PoseLandmark[landmark_name].value]
-        return landmark if 0 <= landmark[0] <= 1 and 0 <= landmark[1] <= 1 else None
-    
+
+    #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    """
+    Computes the position of an organ based on two landmark centers and various offsets.
+    The algorithm adjusts the position based on calibration data and applies additional offsets 
+    to refine the organ's location on the image.
+    """
     def calculate_organ_position(self, center1, center2, x_offset=0, y_offset=0, offset_calibration=None, estimate_distance=None):
         image_height, image_width = self.image_shape()
 
@@ -119,7 +203,14 @@ class BodyLandmarkPosition:
             
         self.cv2_circle(organ_position=(x, y))
         return (x, y, z)
+    
 
+    #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    """
+    Converts image coordinates to Unity coordinates, applying necessary adjustments for 
+    offsets and transformations. The algorithm involves normalizing coordinates, scaling, 
+    and applying calibration data to adjust the position in Unity space.
+    """
     def calculate_unity_coordinates(self, center, x_offset=0, y_offset=0, z_offset=0, offset_calibration=None, estimate_distance=None):
         image_height, image_width = self.image_shape()
 
@@ -170,37 +261,13 @@ class BodyLandmarkPosition:
     
         return position_dict
     
-    def validate_landmarks_list(self, landmarks_list):
-        if len(landmarks_list) == 33:
-            # print("Validation passed: 33 landmarks found.")
-            return True
-        else:
-            # print(f"Validation failed: {len(landmarks_list)} landmarks found.")
-            return False
-    
-    def all_unity_coordinates(self, x_offset=0, y_offset=0, z_offset=0, offset_calibration=None, estimate_distance=None):
-        adjusted_landmarks = []
 
-        landmarks_list = self.landmark_list()
-
-        if self.validate_landmarks_list(landmarks_list=landmarks_list):
-            for lm in landmarks_list:
-                adjusted_landmark = self.calculate_unity_coordinates(lm, x_offset, y_offset, z_offset, offset_calibration, estimate_distance)
-                adjusted_landmarks.append(adjusted_landmark)
-
-            return adjusted_landmarks
-        else:
-            return None
-    
-    def calculate_pixel_distance(self, point1, point2):
-        x1, y1 = point1
-        x2, y2 = point2
-        return np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
-
-    def calibrate_distance(self, pixel_distance, known_height_pixels, known_height_meters):
-        # Convert pixel distance to real-world distance
-        return (pixel_distance / known_height_pixels) * known_height_meters
-
+    #-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    """
+    Estimates the distance between landmarks based on pixel measurements and calibration data. 
+    The algorithm calculates the pixel distance between landmarks, applies calibration factors, 
+    and returns the estimated distance if it falls within the specified range.
+    """
     def estimate_distance(self, offset_calibration):
         Nose = self.get_landmark('NOSE')
         pair_foot = self.landmark_pair('LEFT_FOOT_INDEX', 'RIGHT_FOOT_INDEX') 
@@ -228,6 +295,18 @@ class BodyLandmarkPosition:
     
             return None
     
+
+# Classes for calculating positions of various body organs based on detected landmarks:
+# - BrainPosition: Determines the position of the brain relative to other landmarks.
+# - HeartPosition: Determines the position of the heart using landmark data.
+# - LungsPosition: Determines the position of the lungs from detected landmarks.
+# - KidneyPosition: Determines the position of the kidneys relative to other body parts.
+# - LiverPosition: Determines the liver's position based on landmarks.
+# - StomachPosition: Determines the position of the stomach using landmark data.
+# - IntestinePosition: Determines the position of the intestines from landmarks.
+# - BodyPosition: General class for calculating overall body positions.
+# - BodyPositionV2: Alternative version of the BodyPosition class with potential enhancements.
+
 class BrainPosition(BodyLandmarkPosition):
     def __init__(self, landmarks, mp_pose, cv2, image):
         super().__init__(landmarks, mp_pose, cv2, image)

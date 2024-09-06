@@ -1,4 +1,6 @@
 settings:
+  users_ttl: 90 # user only stay on the connection
+
   main_runner: "unity" # unity, debug, debug_quizz
   debug_organ: "intestine" # brain,  heart, lungs, kidney, liver, stomach, intestine, body
 
@@ -25,7 +27,7 @@ settings:
       min_detection_confidence: 0.5
       min_tracking_confidence: 0.5
 
-  track_supported: ["brain", "heart", "lungs", "kidney", "liver", "stomach", "intestine"]
+  track_supported: ["brain", "heart", "lungs", "kidney", "liver", "stomach", "intestine", "body"]
   organs_quizz:
     brain: 
       with_both_hand: False

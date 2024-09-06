@@ -14,6 +14,7 @@ from config import svc_configs
 from datetime import datetime, timezone
 
 # --------------------------------------------------------------------------------------------
+# Configs and Setup
 svc_logger = setup_logger_svc()
 
 configs = svc_configs()
@@ -34,54 +35,84 @@ hands = mp_hands.Hands(**mp_settings_hands)
 
 # --------------------------------------------------------------------------------------------
 #  GLOBALS
-# STORE WRITER FOR CLIENT
+
 clients = {}
 typeSelected = None
-start_time=0
+start_time = 0
 # --------------------------------------------------------------------------------------------
 
+# all staled user must be remove. para gamay nalang ang ehh Loop kahayahay sa nag pa bilin
+# More details
+# This function removes users who have been inactive for longer than the allowed TTL (time-to-live).
+# It checks each user's last active time and disconnects them if the elapsed time exceeds the TTL.
+# The `handle_disconnection` function is called to handle the cleanup for inactive users.
+async def remove_staled_user():
+    p_time = time.time()
+    users_ttl = default_settings.get('users_ttl', None)
+
+    if users_ttl:
+        if len(clients) > 0:
+            for client in clients:
+                elapsed_time = p_time - clients[client]['time']
+                if elapsed_time > users_ttl:
+                    await handle_disconnection(client, clients[client]['role'], clients[client]['writer'])
+
+
+# For registering and updated changed about the user... igo ragud geh save ug update sa dictionary rag JSON sa javascript
+# More details
+# This function registers a new user or updates existing user details in the `clients` dictionary.
+# It updates the user’s last active time, role, address, port, and writer if they have changed.
+# New users are added to the dictionary with their initial details. Logging is used to track changes.
 async def register_user(userUUID, userRole, addr, writer):
-    global clients
-
+    checkUser = clients.get(userUUID, None)
     try:
-        checkUser = clients.get(userUUID, None)
-
+        
         if checkUser:
+            clients[userUUID]['time'] = time.time()
+
             if clients[userUUID]['role'] != userRole:
-                svc_logger.info(f"user {userUUID} change role from {clients[userUUID]['role']} to {userRole}")
+                svc_logger.info(f"user [{userUUID}, {clients[userUUID]['role']}] change role from {clients[userUUID]['role']} to {userRole}")
                 clients[userUUID]['role'] = userRole
 
             if clients[userUUID]['port'] != addr[1]:
-                if clients[userUUID]['role'] == "Host":
-                    svc_logger.info(f"user [{userUUID}, {clients[userUUID]['role']}] reconnect from prev port {clients[userUUID]['port']} to {addr}, need to remove all clients and reconnect them back")
-                    clients = {}
-                elif clients[userUUID]['role'] == "Guest":
-                    svc_logger.info(f"user[{userUUID}, {clients[userUUID]['role']}] reconnect from prev port {clients[userUUID]['port']} to {addr}, need to remove from clients and reconnect back")
-                    del clients[userUUID]
- 
+                svc_logger.info(f"user [{userUUID}, {clients[userUUID]['role']}] reconnect from prev port {clients[userUUID]['port']} to {addr}")
+                clients[userUUID]['role'] = userRole
+                clients[userUUID]['writer'] = writer
+                clients[userUUID]['port'] = addr[1]
+
         if checkUser is None:
             clients[userUUID] = {
                 'role': userRole,
                 'address': addr[0],
                 'port': addr[1],
-                'writer': writer
+                'writer': writer,
+                'time': time.time()
             }
 
             svc_logger.info("register user: " + str([userUUID, userRole]))
 
     except Exception as e:
-        svc_logger.info("Error in registering user")
+        svc_logger.error("Error in registering user")
         traceback.print_exc()
 
 
+# adjust frame/image from landscape to portrait mode
+# More details
+# This function adjusts the orientation of the provided frame.
+# If the frame is in landscape mode (width greater than height), it rotates the frame to portrait mode.
+# This ensures the frame is correctly oriented for further processing.
 def adjust_orientation(frame):
-    # Check if the image is in portrait mode
     if frame.shape[1] > frame.shape[0]:
         frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
     return frame
     # return cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
 
 
+# this will process the frame and calculate the position based on the organ selected.... ambot ug Strategy pattern ang geh follow sa pag calc.
+# More details
+# This function processes a video frame to calculate positions based on organ landmarks.
+# It converts the frame to RGB, processes it with pose and hand models, and calculates positions based on landmarks.
+# The processed frame is returned along with the calculated position results.
 def process_frame(frame, trackType):
     results = None
     image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -132,6 +163,10 @@ def process_frame(frame, trackType):
     return results, image
 
 # Recieve JSON from clients
+# More details
+# This function receives and decodes a JSON message from the client.
+# It reads the length prefix to determine the size of the JSON data, then reads and decodes the JSON message.
+# It handles incomplete reads and other exceptions gracefully, returning `None` if an error occurs.
 async def receive_json(reader):
     try:
         length_prefix = await reader.readexactly(4)
@@ -151,7 +186,12 @@ async def receive_json(reader):
     except Exception as e:
         return None
     
+
 # Recieve Video FRAME from clients
+# More details
+# This function receives and decodes a video frame from the client.
+# It reads the length prefix to determine the size of the frame data, then reads and decodes the frame.
+# It handles incomplete reads and other exceptions gracefully, returning `None` if an error occurs.
 async def receive_frame(reader):
     try:
         length_prefix = await reader.readexactly(4)
@@ -169,42 +209,51 @@ async def receive_frame(reader):
     except Exception as e:
         return None
 
+
 # send UNITY POSITION to HOST
-async def send_position(userUUID, unity_position):
+# More details
+# This function sends the calculated unity position to a specified user.
+# It encodes the position data in JSON format and sends it to the user using their writer.
+# It handles connection errors and ensures the writer is closed properly if there are issues.
+async def send_unity_position(userUUID, unity_position):
     global start_time
     checkUser = clients.get(userUUID, None)
 
     try:
         if checkUser:
             writer = clients[userUUID]['writer']
-            role = clients[userUUID]['role']
+            user_role = clients[userUUID]['role']
 
             data = json.dumps(unity_position).encode('utf-8')
             length_prefix = len(data).to_bytes(4, byteorder='little')
             writer.write(length_prefix + data)
             
-            end_time = time.time()
-            calc_time_and_log(topic='send_position', start_time=start_time, end_time=end_time)
-
             await writer.drain()
+
+            end_time = time.time()
+            calc_time_and_log(topic='send_unity_position', role=user_role, start_time=start_time, end_time=end_time)
 
     except (ConnectionResetError, BrokenPipeError, OSError) as e:
         # print(f"Error sending json message: {e}. The client might have disconnected.")
-        svc_logger.info(f"Error sending json message: {e}. The client might have disconnected.")
-        await handle_disconnection(userUUID, role, writer)
+        svc_logger.error(f"Error sending json message: {e}. The client might have disconnected.")
+        await handle_disconnection(userUUID, user_role, writer)
 
     except Exception as e:
         # print(f"Error sending json message: {e}")
-        svc_logger.info(f"Error sending json message: {e}")
+        svc_logger.error(f"Error sending json message: {e}")
 
 
+# This function sends a JSON message to a specified user.
+# It encodes the message in JSON format and sends it using the user's writer.
+# It handles connection errors and ensures the writer is closed properly if there are issues.
 async def send_json_message(userUUID, json_msg):
+    global start_time
     checkUser = clients.get(userUUID, None)
 
     try:
         if checkUser:
             writer = clients[userUUID]['writer']
-            role = clients[userUUID]['role']
+            user_role = clients[userUUID]['role']
 
             if writer.is_closing():
                 return
@@ -215,15 +264,21 @@ async def send_json_message(userUUID, json_msg):
             writer.write(length_prefix + data)
             await writer.drain()
 
+            end_time = time.time()
+            calc_time_and_log(topic='send_json_message', role=user_role, start_time=start_time, end_time=end_time)
+
     except (ConnectionResetError, BrokenPipeError, OSError) as e:
         # print(f"Error sending json message: {e}. The client might have disconnected.")
-        svc_logger.info(f"Error sending json message: {e}. The client might have disconnected.")
-        await handle_disconnection(userUUID, role, writer)
+        svc_logger.error(f"Error sending json message: {e}. The client might have disconnected.")
+        await handle_disconnection(userUUID, user_role, writer)
     except Exception as e:
         # print(f"Error sending json message: {e}")
-        svc_logger.info(f"Error sending json message: {e}")
+        svc_logger.error(f"Error sending json message: {e}")
 
 
+# This function handles user disconnections.
+# It closes the writer for the specified user and removes the user from the `clients` dictionary.
+# Logging is used to track the closure and removal of users.
 async def handle_disconnection(userUUID, role, writer):
     try:
         if role and writer and not writer.is_closing():
@@ -232,24 +287,36 @@ async def handle_disconnection(userUUID, role, writer):
             # print(f"Writer for {userUUID} closed.")
             svc_logger.info(f"Writer for [{userUUID}, {role}] closed.")
 
+        if userUUID in clients:
+            # print(f"Removing {userUUID} from clients.")  
+            del clients[userUUID]
+            svc_logger.info(f"Removing [{userUUID}, {role}] from clients. Current number of clients connected ({len(clients)})")
+
     except Exception as e:
         # print(f"Error closing writer for {userUUID}: {e}")
-        svc_logger.info(f"Error closing writer for {userUUID}: {e}")
+        svc_logger.error(f"Error closing writer for {userUUID}: {e}")
     finally:
+        # Ensure it removes
         if userUUID in clients:
             # print(f"Removing {userUUID} from clients.")
-            svc_logger.info(f"Removing [{userUUID}, {role}] from clients.")
             del clients[userUUID]
+            svc_logger.warn(f"Ensure to remove [{userUUID}, {role}] from clients. Current number of clients connected ({len(clients)})")
 
 
+# maintain client connection and process them... wanakoy masulti kay naana dinhia tanang publema
+# More details
+# This function maintains client connections and processes incoming data.
+# It handles JSON and frame data, manages user roles, and ensures only one host is active.
+# It processes frames to calculate positions, updates clients with new information, and manages client disconnections.
 async def handle_client(reader, writer):
     global start_time
     global typeSelected
 
     addr = writer.get_extra_info('peername')
     loop = asyncio.get_running_loop()
-    is_duplicate_host = False
     position_rotation = None
+    cachedFrame = None
+    not_empty_mult_host = False
 
     try:
         while True:
@@ -266,84 +333,101 @@ async def handle_client(reader, writer):
                 rotation = jsonMsg.get('rotation', None)
                
                 if msg_text == "PING":
-                    if userUUID and userRole and msg_text:
-                        await register_user(userUUID, userRole, addr, writer)
+                    # if userUUID and userRole and msg_text:
+                    await register_user(userUUID, userRole, addr, writer)
                     # # No Need to send back PONG
                     # pong_msg = { 'message' : "PONG"}
                     # await send_json_message(userUUID, pong_msg)
 
-            count_host = 0
-            for client in clients:
-                if clients[client]['role'] == "Host":
-                    count_host += 1
-
+            # remove user that no longer active... kung sa DULA pah AFK nah. inang dayug easy farm.
+            await remove_staled_user()       
+            
+            # count if how many host in the clients list... kay mabuang ang ning server kung duha
+            count_host = sum(1 for client in clients if clients[client]['role'] == "Host")
             if count_host > 1:
-                duplicate_host = { 'uuid': client, 'message' : "There are more than one (1) host in this server, please choose only one host"}
-                await send_json_message(client, duplicate_host)
-
-            if count_host == 1:
+                not_empty_mult_host = True
+            
+            # Notify all hosts about the issue of multiple hosts connection.... para nice feature kunuhay
+            if not_empty_mult_host: 
                 for client in clients:
                     if clients[client]['role'] == "Host":
+                        duplicate_host_msg = { 'uuid': client, 'message': "There are multiple hosts. Only one is allowed." }
+                        await send_json_message(client, duplicate_host_msg)
+                
 
-                        if frame is None:
-                            continue
+            if count_host == 1:
+                if not_empty_mult_host:
+                    for client in clients:
+                        duplicate_host_msg = { 'uuid': client, 'message': "" }
+                        await send_json_message(client, duplicate_host_msg)
 
-                        adjustedFrame = frame
+                    not_empty_mult_host = False
+
+                if frame is not None:
+                    cachedFrame = frame
+                    host_client = next(client for client in clients if clients[client]['role'] == "Host")
+                
+                    adjustedFrame = frame
+                    if msg_text is not None:
                         typeSelected = msg_text
 
-                        if default_settings["adjust_orientation"]:
-                            adjustedFrame = adjust_orientation(frame=frame);
-                        if default_settings["override_type_selected"]:
-                            typeSelected = default_settings["debug_organ"]
+                    if default_settings["adjust_orientation"]:
+                        adjustedFrame = adjust_orientation(frame=cachedFrame)
+                    if default_settings["override_type_selected"]:
+                        typeSelected = default_settings["debug_organ"]
 
-                        if isinstance(track_supported, list):
-                            if typeSelected in track_supported:
+                    if typeSelected and isinstance(track_supported, list) and typeSelected in track_supported:
+                        results, image = await loop.run_in_executor(None, process_frame, adjustedFrame, typeSelected.lower())
+                        
+                        if results:
+                            if isinstance(results, str) and results == default_settings["err_distance"]:
+                                error_message = { 'uuid': host_client, 'message': "Adjust your distance from the camera." }
+                                await send_json_message(host_client, error_message)
+                            else:
+                                common_position, unity_position = results
+                                await send_unity_position(host_client, unity_position)
 
-                                results, image = await loop.run_in_executor(None, process_frame, adjustedFrame, typeSelected.lower())
-                                if results is not None:    
-                                    if isinstance(results, str) and results == default_settings["err_distance"]:
-                                        message = "The person is not at the proper distance. Please move closer or farther to adjust to the correct distance."
-                                        error_message = { 'uuid': client, 'message' : message}
-                                        await send_json_message(client, error_message)
-                                    else:
-                                        common_position, unity_position = results
-                                        await send_position(client, unity_position)
+                        if image is not None:
+                            cv2.imshow(addr[0], image)
+                            cv2.waitKey(1)
 
-                                if image is not None:
-                                    cv2.imshow(addr[0], image)
-                                    cv2.waitKey(1)
+                    if position and rotation:
+                        position_rotation = {
+                            "positionX": position['x'],
+                            "positionY": position['y'],
+                            "positionZ": position['z'],
+                            "rotationX": rotation['x'],
+                            "rotationY": rotation['y'],
+                            "rotationZ": rotation['z']
+                        }
 
-                                if position and rotation:
-                                    position_rotation = {
-                                        "positionX": position['x'],
-                                        "positionY": position['y'],
-                                        "positionZ": position['z'],
+                    if position_rotation:
+                        for client in clients:
+                            if clients[client]['role'] == "Guest" and position_rotation:
+                                await send_json_message(client, position_rotation)
 
-                                        "rotationX": rotation['x'],
-                                        "rotationY": rotation['y'],
-                                        "rotationZ": rotation['z']
-                                    }
-
-                    elif clients[client]['role'] == "Guest":
-                        if position_rotation:
-                            await send_json_message(client, position_rotation)
-
-            await asyncio.sleep(0.05)
+            await asyncio.sleep(0.03)
     except Exception as e:
-        print(f"Exception in client thread: {e}")
+        svc_logger.error(f"Exception in client thread: {e}")
         cv2.destroyWindow(addr[0])
     finally:
         writer.close()
         await writer.wait_closed()
-        print(f"Connection to {addr} closed.")
+        svc_logger.warn(f"Connection to {addr} closed. Current number of clients connected ({len(clients)})")
 
-
+# This function handles incoming client connections.
+# It retrieves the client's address information from the writer and logs the connection.
+# It then calls the `handle_client` function to manage communication with the client.
 async def cb(reader, writer):
     addr = writer.get_extra_info('peername')
     # print(f'Accepted connection from {addr}')
     svc_logger.info(f'Accepted connection from {addr}')
     await handle_client(reader, writer)
 
+
+# This function initializes and starts the Unity streaming server.
+# It sets the server to listen on all available interfaces at port 5000.
+# It logs the server start time and port, then enters a loop to continuously serve incoming client connections.
 async def unity_stream():
     host = '0.0.0.0'
     port = 5000
@@ -485,7 +569,8 @@ def debug_quizz():
     cv2.destroyAllWindows()  
 
 def main():
-    print("Default settings  => ", configs["default"])
+    log_config = configs["default"]
+    svc_logger.info(f"Default settings  =>  {log_config}")
 
     if main_runner == "unity":
         asyncio.run(unity_stream())
