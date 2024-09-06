@@ -7,15 +7,14 @@ import time
 import math
 import traceback
 
-from BodyLandmarkPosition import calculate_position, calculate_position_v2
+from BodyLandmarkPosition import calculate_position_v2
 from Quizz import start_quiz_func
-from Logger import calc_time_and_log, setup_logger_svc
+from Logger import svc_log, calc_time_and_log
 from config import svc_configs
 from datetime import datetime, timezone
 
 # --------------------------------------------------------------------------------------------
-# Configs and Setup
-svc_logger = setup_logger_svc()
+# # Configs and Setup
 
 configs = svc_configs()
 default_settings  = configs["default"]["settings"]
@@ -33,6 +32,7 @@ pose = mp_pose.Pose(**mp_settings_pose)
 mp_hands = mp.solutions.hands
 hands = mp_hands.Hands(**mp_settings_hands)
 
+is_cv2_show = default_settings.get("cv2_show", False)
 # --------------------------------------------------------------------------------------------
 #  GLOBALS
 
@@ -71,11 +71,11 @@ async def register_user(userUUID, userRole, addr, writer):
             clients[userUUID]['time'] = time.time()
 
             if clients[userUUID]['role'] != userRole:
-                svc_logger.info(f"user [{userUUID}, {clients[userUUID]['role']}] change role from {clients[userUUID]['role']} to {userRole}")
+                svc_log(f"user [{userUUID}, {clients[userUUID]['role']}] change role from {clients[userUUID]['role']} to {userRole}")
                 clients[userUUID]['role'] = userRole
 
             if clients[userUUID]['port'] != addr[1]:
-                svc_logger.info(f"user [{userUUID}, {clients[userUUID]['role']}] reconnect from prev port {clients[userUUID]['port']} to {addr}")
+                svc_log(f"user [{userUUID}, {clients[userUUID]['role']}] reconnect from prev port {clients[userUUID]['port']} to {addr}")
                 clients[userUUID]['role'] = userRole
                 clients[userUUID]['writer'] = writer
                 clients[userUUID]['port'] = addr[1]
@@ -89,10 +89,10 @@ async def register_user(userUUID, userRole, addr, writer):
                 'time': time.time()
             }
 
-            svc_logger.info("register user: " + str([userUUID, userRole]))
+            svc_log("register user: " + str([userUUID, userRole]))
 
     except Exception as e:
-        svc_logger.error("Error in registering user")
+        svc_log("Error in registering user")
         traceback.print_exc()
 
 
@@ -171,7 +171,7 @@ async def receive_json(reader):
     try:
         length_prefix = await reader.readexactly(4)
         if not length_prefix:
-            return None, None
+            return None
 
         json_length = int.from_bytes(length_prefix, byteorder='little')
         json_data = await reader.readexactly(json_length)
@@ -181,7 +181,11 @@ async def receive_json(reader):
 
         return json_msg  
     
-    except asyncio.IncompleteReadError:
+    except asyncio.IncompleteReadError as e:
+        return None
+    except UnicodeDecodeError as e:
+        return None
+    except json.JSONDecodeError as e:
         return None
     except Exception as e:
         return None
@@ -195,7 +199,10 @@ async def receive_json(reader):
 async def receive_frame(reader):
     try:
         length_prefix = await reader.readexactly(4)
-            
+
+        if not length_prefix:
+            return None
+        
         frame_length = int.from_bytes(length_prefix, byteorder='little')
         frame_data = await reader.readexactly(frame_length)
 
@@ -204,7 +211,9 @@ async def receive_frame(reader):
 
         return frame
     
-    except asyncio.IncompleteReadError:
+    except asyncio.IncompleteReadError as e:
+        return None
+    except cv2.error as e:
         return None
     except Exception as e:
         return None
@@ -234,13 +243,11 @@ async def send_unity_position(userUUID, unity_position):
             calc_time_and_log(topic='send_unity_position', role=user_role, start_time=start_time, end_time=end_time)
 
     except (ConnectionResetError, BrokenPipeError, OSError) as e:
-        # print(f"Error sending json message: {e}. The client might have disconnected.")
-        svc_logger.error(f"Error sending json message: {e}. The client might have disconnected.")
+        svc_log(f"Error sending json message: {e}. The client might have disconnected.", "ERROR")
         await handle_disconnection(userUUID, user_role, writer)
 
     except Exception as e:
-        # print(f"Error sending json message: {e}")
-        svc_logger.error(f"Error sending json message: {e}")
+        svc_log(f"Error sending json message: {e}", "ERROR")
 
 
 # This function sends a JSON message to a specified user.
@@ -268,12 +275,10 @@ async def send_json_message(userUUID, json_msg):
             calc_time_and_log(topic='send_json_message', role=user_role, start_time=start_time, end_time=end_time)
 
     except (ConnectionResetError, BrokenPipeError, OSError) as e:
-        # print(f"Error sending json message: {e}. The client might have disconnected.")
-        svc_logger.error(f"Error sending json message: {e}. The client might have disconnected.")
+        svc_log(f"Error sending json message: {e}. The client might have disconnected.", "ERROR")
         await handle_disconnection(userUUID, user_role, writer)
     except Exception as e:
-        # print(f"Error sending json message: {e}")
-        svc_logger.error(f"Error sending json message: {e}")
+        svc_log(f"Error sending json message: {e}", "ERROR")
 
 
 # This function handles user disconnections.
@@ -284,23 +289,19 @@ async def handle_disconnection(userUUID, role, writer):
         if role and writer and not writer.is_closing():
             writer.close()
             await writer.wait_closed()
-            # print(f"Writer for {userUUID} closed.")
-            svc_logger.info(f"Writer for [{userUUID}, {role}] closed.")
+            svc_log(f"Writer for [{userUUID}, {role}] closed.")
 
         if userUUID in clients:
-            # print(f"Removing {userUUID} from clients.")  
             del clients[userUUID]
-            svc_logger.info(f"Removing [{userUUID}, {role}] from clients. Current number of clients connected ({len(clients)})")
+            svc_log(f"Removing [{userUUID}, {role}] from clients. Current number of clients connected ({len(clients)})")
 
     except Exception as e:
-        # print(f"Error closing writer for {userUUID}: {e}")
-        svc_logger.error(f"Error closing writer for {userUUID}: {e}")
+        svc_log(f"Error closing writer for {userUUID}: {e}", "ERROR")
     finally:
         # Ensure it removes
         if userUUID in clients:
-            # print(f"Removing {userUUID} from clients.")
             del clients[userUUID]
-            svc_logger.warn(f"Ensure to remove [{userUUID}, {role}] from clients. Current number of clients connected ({len(clients)})")
+            svc_log(f"Ensure to remove [{userUUID}, {role}] from clients. Current number of clients connected ({len(clients)})", "WARN")
 
 
 # maintain client connection and process them... wanakoy masulti kay naana dinhia tanang publema
@@ -321,6 +322,10 @@ async def handle_client(reader, writer):
     try:
         while True:
             start_time = time.time()
+            
+            if reader.at_eof():
+                svc_log("Reader reached EOF. Possible Host disconnect or quit")
+                break
 
             jsonMsg = await receive_json(reader)
             frame = await receive_frame(reader)
@@ -387,9 +392,10 @@ async def handle_client(reader, writer):
                                 common_position, unity_position = results
                                 await send_unity_position(host_client, unity_position)
 
-                        if image is not None:
-                            cv2.imshow(addr[0], image)
-                            cv2.waitKey(1)
+                        if is_cv2_show:
+                            if image is not None:
+                                cv2.imshow(addr[0], image)
+                                cv2.waitKey(1)
 
                     if position and rotation:
                         position_rotation = {
@@ -408,20 +414,22 @@ async def handle_client(reader, writer):
 
             await asyncio.sleep(0.03)
     except Exception as e:
-        svc_logger.error(f"Exception in client thread: {e}")
-        cv2.destroyWindow(addr[0])
+        svc_log(f"Exception in client thread: {e}", "ERROR")
     finally:
-        writer.close()
-        await writer.wait_closed()
-        svc_logger.warn(f"Connection to {addr} closed. Current number of clients connected ({len(clients)})")
+        if writer:
+            writer.close()
+            await writer.wait_closed()
+        if addr and addr[0]:
+            if is_cv2_show:
+                cv2.destroyWindow(addr[0])
+        svc_log(f"Connection to {addr} closed. Current number of clients connected {len(clients)}")
 
 # This function handles incoming client connections.
 # It retrieves the client's address information from the writer and logs the connection.
 # It then calls the `handle_client` function to manage communication with the client.
 async def cb(reader, writer):
     addr = writer.get_extra_info('peername')
-    # print(f'Accepted connection from {addr}')
-    svc_logger.info(f'Accepted connection from {addr}')
+    svc_log(f'Accepted connection from {addr}')
     await handle_client(reader, writer)
 
 
@@ -436,7 +444,7 @@ async def unity_stream():
     current_time_gmt = datetime.now(timezone.utc)
 
     svc_msg = f'Server start at {current_time_gmt}, server port: {port}'
-    svc_logger.info(svc_msg)
+    svc_log(svc_msg)
 
     async with server:
         await server.serve_forever()
@@ -570,7 +578,7 @@ def debug_quizz():
 
 def main():
     log_config = configs["default"]
-    svc_logger.info(f"Default settings  =>  {log_config}")
+    svc_log(f"Default settings  =>  {log_config}")
 
     if main_runner == "unity":
         asyncio.run(unity_stream())
