@@ -1,5 +1,5 @@
 settings:
-  users_ttl: 5 # user only stay on the connection
+  users_ttl: 30 # user only stay on the connection
 
   main_runner: "unity" # unity, debug, debug_quizz
   debug_organ: "intestine" # brain,  heart, lungs, kidney, liver, stomach, intestine, body
