@@ -1,8 +1,6 @@
 import yaml
 import os
-from Logger import setup_logger_svc
 
-svc_logger = setup_logger_svc()
 # Cache the config to avoid unnecessary file reads
 cached_config = None
 
@@ -45,6 +43,6 @@ def svc_configs():
 
 
       cached_config = configs
-      svc_logger.info("configs has been cached")
+      print("configs has been cached")
       
    return cached_config
