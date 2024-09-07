@@ -438,7 +438,7 @@ async def cb(reader, writer):
 # It logs the server start time and port, then enters a loop to continuously serve incoming client connections.
 async def unity_stream():
     host = '0.0.0.0'
-    port = 5000
+    port = 10000 #5000
 
     server = await asyncio.start_server(cb, host, port)
     current_time_gmt = datetime.now(timezone.utc)
