@@ -2,7 +2,7 @@ settings:
   users_ttl: 30 # user only stay on the connection
 
   main_runner: "unity" # unity, debug, debug_quizz
-  debug_organ: "intestine" # brain,  heart, lungs, kidney, liver, stomach, intestine, body
+  debug_organ: "heart" # brain, heart, lungs, kidney, liver, stomach, intestine, body
 
   image_flip: False # Flip image, since cv2 mirror the image
   adjust_orientation: True # If main runner is unity => True if mobile device used and False when using webcam
