@@ -1,7 +1,9 @@
 import math
-from config import svc_configs
 import traceback
 import numpy as np
+
+from config import svc_configs
+from Logger import svc_log
 
 configs = svc_configs()
 default_settings  = configs["default"]["settings"]
@@ -137,7 +139,7 @@ class BodyLandmarkPosition:
                 # print(aspr, " => ", [image_height, image_width, aspect_ratio]) 
                 return aspr
            
-        print("Aspect Ratio Not Identified. [image_height, image_width, aspect_ratio] =>", [image_height, image_width, aspect_ratio])
+        svc_log(f"Aspect Ratio Not Identified. [image_height, image_width, aspect_ratio] => [{image_height}, {image_width}, {aspect_ratio}]", "WARN", "BodyLandmarkPosition")
         return None
     
 
@@ -660,5 +662,5 @@ def calculate_position_v2(oType, args):
             organ_cls = organs[oType]
             return organ_cls(**args).get_position()
         except Exception as e:
-            print("Unable to calculate organ position => ",  e)
+            svc_log(f"Unable to calculate organ position => {e}", "ERROR", "BodyLandmarkPosition")
             traceback.print_exc()

@@ -7,7 +7,7 @@ import math
 from config import svc_configs
 import sys
 
-base_filename = "app.log"
+base_filename = "svc.log"
 folder_path = "logs"
 
 folder_path_calc_response_time = os.path.join(folder_path, "calc-response-time")
@@ -141,7 +141,7 @@ def setup_logger_rts(extra_fields=None):
 
 
 def setup_logger_svc(extra_fields=None):
-   log_path_svc = os.path.join(folder_path_svc, "svc.log")
+   log_path_svc = os.path.join(folder_path_svc, base_filename)
 
    logger_svc = logging.getLogger("JsonLogger")
    logger_svc.setLevel(logging.DEBUG)
@@ -149,10 +149,13 @@ def setup_logger_svc(extra_fields=None):
    for handler in logger_svc.handlers[:]:
       logger_svc.removeHandler(handler)
 
-   json_formatter_svc = SVCJsonFormatter(extra_fields=extra_fields)
+   handler = DateRotatingFileHandler(
+      log_path_svc, maxBytes=50 * 1024, backupCount=0
+   )
 
-   handler = logging.FileHandler(log_path_svc)
-   handler.setLevel(logging.DEBUG)
+   json_formatter_svc = SVCJsonFormatter(extra_fields=extra_fields)
+   # handler = logging.FileHandler(log_path_svc)
+   # handler.setLevel(logging.DEBUG)
    handler.setFormatter(json_formatter_svc)
    logger_svc.addHandler(handler)
 

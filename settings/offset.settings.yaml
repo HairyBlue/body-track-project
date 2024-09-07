@@ -8,41 +8,41 @@ settings:
       # "20_by_9",
       # "21_by_9",
       # "22_by_9",
-      "4_by_3",
+      # "4_by_3",
     ]
 
   aspect_ratio:
     # # operator  => subtraction or addition
     # #
     # # 4:3  probably webcam for debug ====================================================================================================
-    4_by_3:
-      brain:
-        common:
-          x_offset: 0
-          y_offset: -20
-          z_offset: 4
-        unity:
-          x_offset: 0
-          y_offset: -0.065
-          z_offset: 20
-        calibration:
-          minimum: 10.20
-          maximum: 19.80
-          y_offset:
-            enable: True
-            operator: "subtraction"
-            common: 5.5
-            unity: 0.15
-          x_offset:
-            enable: False
-            operator: "subtraction"
-            common: 0
-            unity: 0
-          z_offset:
-            enable: True
-            operator: "subtraction"
-            common: 0
-            unity: 0.75
+    # 4_by_3:
+    #   brain:
+    #     common:
+    #       x_offset: 0
+    #       y_offset: -20
+    #       z_offset: 4
+    #     unity:
+    #       x_offset: 0
+    #       y_offset: -0.065
+    #       z_offset: 20
+    #     calibration:
+    #       minimum: 10.20
+    #       maximum: 19.80
+    #       y_offset:
+    #         enable: True
+    #         operator: "subtraction"
+    #         common: 5.5
+    #         unity: 0.15
+    #       x_offset:
+    #         enable: False
+    #         operator: "subtraction"
+    #         common: 0
+    #         unity: 0
+    #       z_offset:
+    #         enable: True
+    #         operator: "subtraction"
+    #         common: 0
+    #         unity: 0.75
 
     # 16:9 ====================================================================================================
     16_by_9:
