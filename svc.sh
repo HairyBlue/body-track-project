@@ -15,16 +15,16 @@ function doManFile() {
          mkdir $bkp
          cp -r logs/* $bkp
       fi
-
-      rm -rf logs
    fi
 
-   if [[ -d 'output.log' ]]; then
-      rm output.log
+   if [[ ! -d  "logs" ]]; then
+       mkdir logs
    fi
 
-   mkdir logs
-   touch output.log
+   if [[ ! -f "output.log" ]]; then
+      touch output.log
+   fi
+  
 }
 
 
@@ -138,7 +138,7 @@ elif [[ "$1" == "install" ]]; then
 elif [[ "$1" == "uninstall" ]]; then
    funinstall $2
 elif [[ "$1" == "rbkp" ]]; then
-   rm -rf "$backup"
+   rm -r "$backup"
 elif [[ "$1" == "ltj" ]]; then
    flogToJson
 else

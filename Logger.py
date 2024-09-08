@@ -6,14 +6,17 @@ from datetime import datetime
 import math
 from config import svc_configs
 import sys
+import shutil
 
 base_filename = "svc.log"
 folder_path = "logs"
 
 folder_path_calc_response_time = os.path.join(folder_path, "calc-response-time")
-folder_path_quizz = os.path.join(folder_path, "quizz")
 folder_path_svc = os.path.join(folder_path, "svc")
 
+
+if os.path.exists(folder_path):
+   shutil.rmtree(folder_path)
 
 # Ensure log directories exist
 for path in [folder_path, folder_path_calc_response_time, folder_path_svc]:

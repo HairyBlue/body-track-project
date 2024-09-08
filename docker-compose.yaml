@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+  img_build:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: no
+    image: myapp
+
+  svc:
+    image: myapp
+    container_name: myapp_c1
+    command:  ./svc.sh start #/opt/docker/body-track-project/svc.sh start 
+    restart: always # no, always, on-failure
+    ports:
+      - "10000:10000"
+    expose:
+      - "10000"
+    depends_on:
+      - img_build
+    tty: true

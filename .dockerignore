@@ -100,3 +100,8 @@ DownloadedLogs/**
 backup-logs
 backup-logs/
 backup-logs/**
+
+svc-logs
+svc-logs/
+svc-backup-logs
+svc-backup-logs/

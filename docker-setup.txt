@@ -1,7 +1,21 @@
 ////////////////////////////////////////////////////////////////////////////////////////
+
+docker-compose build --no-cache
+docker-compose up
+docker-compose down
+
+docker exec -it myapp_c1 /bin/bash
 docker build -t myapp .
 docker run --name myapp_c1 -p 10000:10000 -d myapp
         OR docker run --rm -d --name myapp_c1 -p 10000:10000 -d myapp
+
+docker stop  <name:container-id>       
+docker ps -a
+docker images
+
+# dont do this unless
+docker container prune
+docker system prune -a  
 ////////////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -78,3 +92,25 @@ EXPOSE 10000
 # Set the default command to run the Python script
 CMD ["python", "main.py"]
 ////////////////////////////////////////////////////////////////////////////////////////
+
+
+FROM python:3.12.5
+
+WORKDIR /opt/docker/body-track-project
+RUN mkdir -p /opt/docker/body-track-project
+COPY . /opt/docker/body-track-project/
+
+RUN chmod +x /opt/docker/body-track-project/svc.sh
+RUN chmod -R 755 /opt/docker/body-track-project
+RUN ls -la /opt/docker/body-track-project/
+
+RUN apt-get update && \
+    apt-get install -y \
+    libgl1-mesa-glx \
+    libglib2.0-0
+
+RUN /opt/docker/body-track-project/svc.sh --help
+RUN /opt/docker/body-track-project/svc.sh build
+
+# EXPOSE 10000
+# CMD ["/opt/docker/body-track-project/svc.sh", "start"]
