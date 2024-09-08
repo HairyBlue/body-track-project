@@ -1,0 +1,80 @@
+////////////////////////////////////////////////////////////////////////////////////////
+docker build -t myapp .
+docker run --name myapp_c1 -p 10000:10000 -d myapp
+        OR docker run --rm -d --name myapp_c1 -p 10000:10000 -d myapp
+////////////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////////////
+FROM python:3.12.5
+
+# Set the working directory inside the container
+WORKDIR /opt/docker/body-track-project
+
+# Copy the current directory contents into the container
+COPY . /opt/docker/body-track-project/
+
+RUN chmod +x /opt/docker/body-track-project/svc.sh
+
+# Install system dependencies for OpenCV
+RUN apt-get update && \
+    apt-get install -y \
+    libgl1-mesa-glx \
+    libglib2.0-0
+
+# Upgrade pip and install Python dependencies
+RUN /opt/docker/body-track-project/svc.sh build
+
+EXPOSE 10000
+
+CMD ["/bin/sh", "-c", ". /opt/docker/body-track-project/svc.sh start"]
+////////////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////////////
+FROM python:3.12.5
+
+# Set the working directory inside the container
+WORKDIR /opt/docker/body-track-project
+
+# Copy the current directory contents into the container
+COPY . .
+
+RUN chmod +x svc.sh
+
+# Install system dependencies for OpenCV
+RUN apt-get update && \
+    apt-get install -y \
+    libgl1-mesa-glx \
+    libglib2.0-0
+
+# Upgrade pip and install Python dependencies
+RUN ./svc.sh build
+
+EXPOSE 10000
+
+CMD ["./svc.sh", "start"]
+////////////////////////////////////////////////////////////////////////////////////////
+
+# Use Python 3.12.5 base image
+FROM python:3.12.5
+
+# Set the working directory inside the container
+WORKDIR /opt/docker/body-track-project
+
+# Copy the current directory contents into the container
+COPY . .
+
+# Install system dependencies for OpenCV
+RUN apt-get update && \
+    apt-get install -y \
+    libgl1-mesa-glx \
+    libglib2.0-0 && \
+    # Upgrade pip and install Python dependencies
+    pip install --upgrade pip && \
+    pip install -r requirements.txt
+
+# Expose the port (e.g., 10000)
+EXPOSE 10000
+
+# Set the default command to run the Python script
+CMD ["python", "main.py"]
+////////////////////////////////////////////////////////////////////////////////////////

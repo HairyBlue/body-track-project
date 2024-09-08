@@ -1,0 +1,172 @@
+#!/bin/bash
+set -e
+
+backup='backup-logs'
+timestamp=$(date +"%Y%m%d_%H%M%S")
+
+# Create a backup of logs and set up the environment
+function doManFile() {
+    if [[ ! -d "$backup" ]]; then
+        mkdir "$backup"
+    fi
+
+    if [[ -d 'logs' ]]; then
+        if [[ "$(ls -A logs)" ]]; then
+            echo "Creating backup for logs"
+            bkp="$backup/$timestamp-bkp"
+            mkdir "$bkp"
+            cp -r logs/* "$bkp"
+        fi
+        rm -rf logs
+    fi
+
+    if [[ -f 'output.log' ]]; then
+        rm output.log
+    fi
+
+    mkdir logs
+    touch output.log
+}
+
+# Exit with an error message
+function die() {
+    echo "$1"
+    exit 1
+}
+
+# Build virtual environment and install dependencies
+function fbuild() {
+    doManFile
+
+    if [[ ! -d "venv" ]]; then
+        python -m venv venv || die "Unable to create venv"
+    fi
+
+    if [[ -d "./venv/Scripts" ]]; then
+        source ./venv/Scripts/activate
+    elif [[ -d "./venv/bin" ]]; then
+        source ./venv/bin/activate
+    else
+        die "Virtual environment not found. Build first"
+    fi
+
+    pip install --upgrade pip || die "Unable to upgrade pip"
+    pip install -r requirements.txt || die "Unable to install requirements"
+
+    echo "Virtual environment activated."
+    which pip
+    which python
+}
+
+# Start the application
+function fstart() {
+    doManFile
+
+    if [[ -d "./venv/Scripts" ]]; then
+        source ./venv/Scripts/activate
+        ./venv/Scripts/python main.py 2> output.log
+    elif [[ -d "./venv/bin" ]]; then
+        source ./venv/bin/activate
+        ./venv/bin/python main.py 2> output.log
+    else
+        die "Virtual environment not found. Build first"
+    fi
+
+    if [[ $? -ne 0 ]]; then
+        echo "Error occurred while running main.py. See output.log for details."
+        cat output.log
+        exit 1
+    fi
+}
+
+# Freeze current environment into requirements.txt
+function freeze() {
+    if [[ -f "requirements.txt" ]]; then
+        rm "requirements.txt"
+    fi
+
+    if [[ -d "./venv/Scripts" ]]; then
+        source ./venv/Scripts/activate
+        pip freeze | sed 's/==.*//' > requirements.txt
+    elif [[ -d "./venv/bin" ]]; then
+        source ./venv/bin/activate
+        pip freeze | sed 's/==.*//' > requirements.txt
+    else
+        die "Virtual environment not found. Build first"
+    fi
+}
+
+# Install a package into the virtual environment
+function finstall() {
+    if [[ -d "./venv/Scripts" ]]; then
+        source ./venv/Scripts/activate
+        pip install "$1" || die "Unable to install package"
+    elif [[ -d "./venv/bin" ]]; then
+        source ./venv/bin/activate
+        pip install "$1" || die "Unable to install package"
+    else
+        die "Virtual environment not found. Build first"
+    fi
+}
+
+# Uninstall a package from the virtual environment
+function funinstall() {
+    if [[ -d "./venv/Scripts" ]]; then
+        source ./venv/Scripts/activate
+        pip uninstall "$1" || die "Unable to uninstall package"
+    elif [[ -d "./venv/bin" ]]; then
+        source ./venv/bin/activate
+        pip uninstall "$1" || die "Unable to uninstall package"
+    else
+        die "Virtual environment not found. Build first"
+    fi
+}
+
+# Convert logs to JSON format
+function flogToJson() {
+    if [[ -d "./venv/Scripts" ]]; then
+        source ./venv/Scripts/activate
+        ./venv/Scripts/python ./deps/logsJson.py || die "Unable to convert logs to JSON"
+    elif [[ -d "./venv/bin" ]]; then
+        source ./venv/bin/activate
+        ./venv/bin/python ./deps/logsJson.py || die "Unable to convert logs to JSON"
+    else
+        die "Virtual environment not found. Build first"
+    fi
+}
+
+# Main script execution
+case "$1" in
+    build)
+        fbuild
+        ;;
+    start)
+        fstart
+        ;;
+    freeze)
+        freeze
+        ;;
+    install)
+        finstall "$2"
+        ;;
+    uninstall)
+        funinstall "$2"
+        ;;
+    rbkp)
+        rm -rf "$backup"
+        ;;
+    ltj)
+        flogToJson
+        ;;
+    *)
+        echo "Usage:"
+        echo "  build       - Build the service and set up virtual environment"
+        echo "  start       - Start the service"
+        echo "  freeze      - Generate a requirements.txt file"
+        echo "  install     - Install a package. Usage: ./svc.sh install <package-name>"
+        echo "  uninstall   - Uninstall a package. Usage: ./svc.sh uninstall <package-name>"
+        echo "  rbkp        - Remove backup folder"
+        echo "  ltj         - Convert logs to JSON"
+        exit 1
+        ;;
+esac

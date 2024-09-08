@@ -1,9 +1,7 @@
 #!/bin/bash
 set -e
-
 backup='backup-logs'
 timestamp=$(date +"%Y%m%d_%H%M%S")
-
 
 function doManFile() {
    if [[ ! -d  "$backup" ]]; then
@@ -17,7 +15,7 @@ function doManFile() {
          mkdir $bkp
          cp -r logs/* $bkp
       fi
-   
+
       rm -rf logs
    fi
 
@@ -41,14 +39,19 @@ function fbuild() {
    if [[ ! -d "venv" ]]; then
       python -m venv venv || die "unable to create venv"
    fi
-   
+
+   echo "Checking virtual environment directory..."
+   ls -la venv
+
    if [[ -d "./venv/Scripts" ]]; then
-      source ./venv/Scripts/activate
+      source  ./venv/Scripts/activate
       sleep 2
+      ./venv/Scripts/python -m pip install --upgrade pip || die "unable to install requirements"
       ./venv/Scripts/python -m pip install -r requirements.txt || die "unable to install requirements"
    elif [[ -d "./venv/bin" ]]; then
-      source ./venv/bin/activate
+      source  ./venv/bin/activate
       sleep 2
+      ./venv/bin/python -m pip install --upgrade pip || die "unable to install requirements"
       ./venv/bin/python -m pip install -r requirements.txt || die "unable to install requirements"
    fi
 
@@ -60,7 +63,7 @@ function fbuild() {
 
 function fstart() {
    doManFile
-   
+
    if [[ -d "./venv/Scripts" ]]; then
       ./venv/Scripts/python main.py 2> output.log
       if [[ $? -ne 0 ]]; then
