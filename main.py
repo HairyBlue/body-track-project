@@ -7,7 +7,7 @@ import time
 import math
 import traceback
 
-from BodyLandmarkPosition import calculate_position_v2
+from BodyLandmarkPosition import calculate_position
 from Quizz import start_quiz_func
 from Logger import svc_log, calc_time_and_log
 from config import svc_configs
@@ -155,7 +155,7 @@ def process_frame(frame, trackType):
             }
 
             mp_drawing.draw_landmarks(image, landmarks, mp_pose.POSE_CONNECTIONS)
-            results =  calculate_position_v2(trackType, args)
+            results =  calculate_position(trackType, args)
 
             # if startQuiz:
             #     start_quiz_func(args, args2, trackType, results, currentUser, send_user_message, writer)
@@ -497,7 +497,7 @@ def debug_feed():
                     }
                     
                     debug_organ = default_settings["debug_organ"]
-                    results =  calculate_position_v2(debug_organ, args)
+                    results =  calculate_position(debug_organ, args)
                     
                     if results is not None:
                         if isinstance(results, str) and results == default_settings["err_distance"]:

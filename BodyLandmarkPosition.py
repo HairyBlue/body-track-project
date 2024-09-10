@@ -579,64 +579,7 @@ class BodyPositionV2(BodyLandmarkPosition):
         
         return None, selected_position
 
-
-    
-def calculate_position(organ_type, landmarks, mp_pose, cv2, image):
-    if organ_type == 'heart':
-        try:
-            organ = HeartPosition(landmarks=landmarks, mp_pose=mp_pose, cv2=cv2, image=image)
-            common_position, unity_position = organ.get_position()
-
-            if unity_position is None:
-                print("Need Proper Position, this will send back to the client if possible")
-            return unity_position
-        except Exception as e:
-            print(e)
-
-    if organ_type == 'brain':
-        try:
-            organ = BrainPosition(landmarks=landmarks, mp_pose=mp_pose, cv2=cv2, image=image)
-            common_position, unity_position = organ.get_position()
-
-            if unity_position is None:
-                print("Need Proper Position, this will send back to the client if possible")
-            return unity_position
-        except Exception as e:
-            print(e)
-
-    if organ_type == 'liver':
-        try:
-            organ = LiverPosition(landmarks=landmarks, mp_pose=mp_pose, cv2=cv2, image=image)
-            common_position, unity_position = organ.get_position()
-
-            if unity_position is None:
-                print("Need Proper Position, this will send back to the client if possible")
-            return unity_position
-        except Exception as e:
-            print(e)
-
-    if organ_type == 'stomach':
-        try:
-            organ = StomachPosition(landmarks=landmarks, mp_pose=mp_pose, cv2=cv2, image=image)
-            common_position, unity_position = organ.get_position()
-
-            if unity_position is None:
-                print("Need Proper Position, this will send back to the client if possible")
-            return unity_position
-        except Exception as e:
-            print(e)
-    if organ_type == 'intestine':
-        try:
-            organ = IntestinePosition(landmarks=landmarks, mp_pose=mp_pose, cv2=cv2, image=image)
-            common_position, unity_position = organ.get_position()
-
-            if unity_position is None:
-                print("Need Proper Position, this will send back to the client if possible")
-            return unity_position
-        except Exception as e:
-            print(e)
-
-def calculate_position_v2(oType, args):
+def calculate_position(oType, args):
         try:
             brain = BrainPosition
             heart = HeartPosition
