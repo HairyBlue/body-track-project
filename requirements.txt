@@ -6,8 +6,8 @@ cvzone
 cycler
 flatbuffers
 fonttools
-importlib-metadata
-importlib-resources
+importlib_metadata
+importlib_resources
 jax
 kiwisolver
 matplotlib

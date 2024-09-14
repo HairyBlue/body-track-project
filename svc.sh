@@ -88,13 +88,25 @@ function freeze() {
       rm "requirements.txt"
    fi
 
-   if [[ -d "./venv/Scripts" ]]; then
-      ./venv/Scripts/python -m pip freeze | sed 's/==.*//' > requirements.txt
-   elif [[ -d "./venv/bin" ]]; then
-      ./venv/bin/python -m pip freeze | sed 's/==.*//' > requirements.txt
-   else 
-      die "Virtual environment not found. Build first"
+   if [[ "$1" == "--no-version" ]]; then
+      if [[ -d "./venv/Scripts" ]]; then
+         ./venv/Scripts/python -m pip freeze | sed 's/==.*//' > requirements.txt
+      elif [[ -d "./venv/bin" ]]; then
+         ./venv/bin/python -m pip freeze | sed 's/==.*//' > requirements.txt
+      else 
+         die "Virtual environment not found. Build first"
+      fi
+   else
+      if [[ -d "./venv/Scripts" ]]; then
+         ./venv/Scripts/python -m pip freeze > requirements.txt
+      elif [[ -d "./venv/bin" ]]; then
+         ./venv/bin/python -m pip freeze > requirements.txt
+      else 
+         die "Virtual environment not found. Build first"
+      fi
    fi
+
+
 }
 
 function finstall() {
@@ -132,7 +144,7 @@ if [[ "$1" == "build" ]]; then
 elif [[ "$1" == "start" ]]; then
    fstart
 elif [[ "$1" == "freeze" ]]; then
-   freeze
+   freeze "$2"
 elif [[ "$1" == "install" ]]; then
    finstall $2
 elif [[ "$1" == "uninstall" ]]; then
@@ -142,11 +154,12 @@ elif [[ "$1" == "rbkp" ]]; then
 elif [[ "$1" == "ltj" ]]; then
    flogToJson
 else
-   echo "build       - build the service, this will activate virtual environment and install dependencies"
-   echo "start       - start services"
-   echo "freeze      - generate a requirements.txt file"
-   echo "install     - install neccessary dependencies. Usage: ./svc.sh install <package-name> | ./svc.sh install cv2"
-   echo "uninstall   - uninstall neccessary dependencies. Usage: ./svc.sh uninstall <package-name> | ./svc.sh uninstall cv2"
-   echo "rbkp        - remove backup folder"
-   echo "ltj         - convert all logs from folder logs and backup-logs on services and also DownloadedLogs folder imported from unity"
+   echo "build                - build the service, this will activate virtual environment and install dependencies"
+   echo "start                - start services"
+   echo "freeze               - generate a requirements.txt file"
+   echo "freeze --no-version     - generate a requirements.txt file"
+   echo "install              - install neccessary dependencies. Usage: ./svc.sh install <package-name> | ./svc.sh install cv2"
+   echo "uninstall            - uninstall neccessary dependencies. Usage: ./svc.sh uninstall <package-name> | ./svc.sh uninstall cv2"
+   echo "rbkp                 - remove backup folder"
+   echo "ltj                  - convert all logs from folder logs and backup-logs on services and also DownloadedLogs folder imported from unity"
 fi
