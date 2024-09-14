@@ -3,16 +3,16 @@ settings:
 
   main_runner: "unity" # unity, debug, debug_quizz
   debug_organ: "heart" # brain, heart, lungs, kidney, liver, stomach, intestine, body
+  override_type_selected: False # Override the selected organ in unity if debug mode on
 
   image_flip: False # Flip image, since cv2 mirror the image
   adjust_orientation: True # If main runner is unity => True if mobile device used and False when using webcam
   enable_adjustments_settings: False # True or False
-  override_type_selected: True # Override the selected organ in unity if debug mode on
-
+  
   err_distance: "error_distance" # send error message to current user if distance in not appropriate
   print_svc_logger: True # false for production
-  
-  cv2_show: False
+  cv2_show: False # view preview of the video and its landmarks from cv2
+
   mp:
     pose:
       static_image_mode: False
