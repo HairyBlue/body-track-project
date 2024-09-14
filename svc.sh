@@ -154,12 +154,12 @@ elif [[ "$1" == "rbkp" ]]; then
 elif [[ "$1" == "ltj" ]]; then
    flogToJson
 else
-   echo "build                - build the service, this will activate virtual environment and install dependencies"
-   echo "start                - start services"
-   echo "freeze               - generate a requirements.txt file"
-   echo "freeze --no-version     - generate a requirements.txt file"
-   echo "install              - install neccessary dependencies. Usage: ./svc.sh install <package-name> | ./svc.sh install cv2"
-   echo "uninstall            - uninstall neccessary dependencies. Usage: ./svc.sh uninstall <package-name> | ./svc.sh uninstall cv2"
-   echo "rbkp                 - remove backup folder"
-   echo "ltj                  - convert all logs from folder logs and backup-logs on services and also DownloadedLogs folder imported from unity"
+   echo "build                   - build the service, this will activate virtual environment and install dependencies"
+   echo "start                   - start services"
+   echo "freeze                  - generate a requirements.txt file"
+   echo "freeze --no-version     - generate a requirements.txt file without versions"
+   echo "install                 - install neccessary dependencies. Usage: ./svc.sh install <package-name> | ./svc.sh install cv2"
+   echo "uninstall               - uninstall neccessary dependencies. Usage: ./svc.sh uninstall <package-name> | ./svc.sh uninstall cv2"
+   echo "rbkp                    - remove backup folder"
+   echo "ltj                     - convert all logs from folder logs and backup-logs on services and also DownloadedLogs folder imported from unity"
 fi
