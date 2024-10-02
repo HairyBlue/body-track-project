@@ -53,7 +53,7 @@ settings:
           z_offset: 4
         unity:
           x_offset: 0
-          y_offset: 0.65
+          y_offset: 0.3
           z_offset: 20
         calibration:
           minimum: 10.20
@@ -61,7 +61,7 @@ settings:
           y_offset:
             enable: True
             operator: "subtraction"
-            common: 5.5
+            common: 6.5
             unity: 0.15
           x_offset:
             enable: False
