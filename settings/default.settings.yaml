@@ -16,6 +16,7 @@ settings:
   err_distance: "error_distance" # send error message to current user if distance in not appropriate
   print_svc_logger: True # false for production
   cv2_show: False # view preview of the video and its landmarks from cv2
+  print_coord_logger: False
 
   mp:
     pose:

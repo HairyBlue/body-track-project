@@ -201,6 +201,7 @@ async def receive_frame(reader):
         length_prefix = await reader.readexactly(4)
 
         if not length_prefix:
+        
             return None
         
         frame_length = int.from_bytes(length_prefix, byteorder='little')

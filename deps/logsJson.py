@@ -18,12 +18,17 @@ if os.path.exists(path_logs_to_json):
 os.makedirs(path_logs_to_json)
 
 def logs_path_func():
+ 
+
    if os.path.exists(logs_path):
       print("Prepare for => ", logs_path)
       for sub in os.listdir(logs_path):
          sub_folder = os.path.join(logs_path, sub)
          files = os.listdir(sub_folder)
+         
          for (root, dirs, filenames) in os.walk(sub_folder):
+            folder_logs_json = ""
+            all_logs = []
             if len(filenames) > 0:
                for idx, filename in enumerate(filenames):
                   file_path = os.path.join(root, filename)
@@ -41,6 +46,7 @@ def logs_path_func():
                      try:
                         json_line = json.loads(line)
                         json_data.append(json_line)
+                        all_logs.append(json_line)
                      except json.JSONDecodeError as e:
                         print(f"Error decoding JSON in file {file_path}: {e}")
 
@@ -49,6 +55,11 @@ def logs_path_func():
                   with open(file_log_json, "w") as json_file:
                      json_dump = json.dumps(json_data, indent=2)
                      json_file.write(json_dump)
+
+               all_log_json = os.path.join(folder_logs_json, "zzz_all.json")
+               with open(all_log_json, "w") as all_json:
+                  all_json_dump = json.dumps(all_logs, indent=2)
+                  all_json.write(all_json_dump) 
 
 
 def backup_logs_path_func():

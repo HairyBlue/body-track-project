@@ -13,7 +13,7 @@ folder_path = "logs"
 
 folder_path_calc_response_time = os.path.join(folder_path, "calc-response-time")
 folder_path_svc = os.path.join(folder_path, "svc")
-
+folder_path_coords = os.path.join(folder_path, "coordinates")
 
 
 try:
@@ -25,7 +25,7 @@ except PermissionError as e:
 os.makedirs(folder_path, exist_ok=True)
 os.makedirs(folder_path_calc_response_time, exist_ok=True)
 os.makedirs(folder_path_svc, exist_ok=True)
-
+os.makedirs(folder_path_coords, exist_ok=True)
 # if os.path.exists(folder_path):
 #    shutil.rmtree(folder_path)
 
@@ -183,6 +183,35 @@ def setup_logger_svc(extra_fields=None):
 
    return logger_svc
 
+def setup_logger_coord(extra_fields=None):
+   log_path_coords = os.path.join(folder_path_coords, base_filename)
+
+   logger_coords = logging.getLogger("JsonLogger")
+   logger_coords.setLevel(logging.DEBUG)
+
+   for handler in logger_coords.handlers[:]:
+      logger_coords.removeHandler(handler)
+
+   handler = DateRotatingFileHandler(
+      log_path_coords, maxBytes=50 * 1024, backupCount=0
+   )
+
+   json_formatter_coord = SVCJsonFormatter(extra_fields=extra_fields)
+   # handler = logging.FileHandler(log_path_svc)
+   # handler.setLevel(logging.DEBUG)
+   handler.setFormatter(json_formatter_coord)
+   logger_coords.addHandler(handler)
+
+   print_coord_unity_logger = default_settings.get("print_coord_logger", False)
+
+   if print_coord_unity_logger:
+      stdout_handler = logging.StreamHandler(sys.stdout)
+      stdout_handler.setLevel(logging.DEBUG)
+      stdout_handler.setFormatter(json_formatter_coord)
+      logger_coords.addHandler(stdout_handler)
+
+   return logger_coords
+
 def calc_time_and_log(topic=None, role=None, start_time=0, end_time=0):
    time_difference_ms = (end_time - start_time) * 1000
    
@@ -219,4 +248,20 @@ def svc_log(message=None, type_logger="INFO", topic="SVC_LOG"):
 
    log_method  = select_type.get(type_logger, svc_logger.info)
    log_method(message, extra=args)
+
+
+def coords_log(topic=None, organ=None, message=None, coords={'x': 0, 'y': 0, 'z': 0}):
+
+   args = {
+      "topic": topic,
+      "organ": organ,
+      "x-coordinates": coords.get('x', 0),
+      "y-coordinates": coords.get('y', 0),
+      "z-coordinates": coords.get('z', 0),
+   }
+
+   extra_fields = ["topic", "organ", "x-coordinates", "y-coordinates", "z-coordinates"]
+
+   coords_logger = setup_logger_coord(extra_fields=extra_fields)
+   coords_logger.info(message, extra=args)
 
