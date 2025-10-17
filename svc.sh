@@ -83,6 +83,28 @@ function fstart() {
    fi
 }
 
+function fsubprocess() {
+   doManFile
+
+   if [[ -d "./venv/Scripts" ]]; then
+      ./venv/Scripts/python subp.py 2> output.log
+      if [[ $? -ne 0 ]]; then
+         echo "Error occurred while running subp.py. See output.log for details."
+         cat output.log
+         exit 1
+      fi
+   elif [[ -d "./venv/bin" ]]; then
+      ./venv/bin/python subp.py 2> output.log 
+      if [[ $? -ne 0 ]]; then
+         echo "Error occurred while running subp.py. See output.log for details."
+         cat output.log
+         exit 1
+      fi
+   else 
+      die "Virtual environment not found. Build first"
+   fi
+}
+
 function freeze() {
    if [[ -f "requirements.txt" ]]; then
       rm "requirements.txt"
@@ -143,6 +165,8 @@ if [[ "$1" == "build" ]]; then
    fbuild
 elif [[ "$1" == "start" ]]; then
    fstart
+elif [[ "$1" == "subp" ]]; then
+   fsubprocess
 elif [[ "$1" == "freeze" ]]; then
    freeze "$2"
 elif [[ "$1" == "install" ]]; then
@@ -155,7 +179,8 @@ elif [[ "$1" == "ltj" ]]; then
    flogToJson
 else
    echo "build                   - build the service, this will activate virtual environment and install dependencies"
-   echo "start                   - start services"
+   echo "start                   - start services main.py"
+   echo "subp                    - this an update to run multiple subprocess of main.py, to handle multiple user to process. host to client object update are now done via websocket, now centralize to user"
    echo "freeze                  - generate a requirements.txt file"
    echo "freeze --no-version     - generate a requirements.txt file without versions"
    echo "install                 - install neccessary dependencies. Usage: ./svc.sh install <package-name> | ./svc.sh install cv2"

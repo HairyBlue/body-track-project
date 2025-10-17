@@ -3,7 +3,7 @@ import traceback
 import numpy as np
 
 from config import svc_configs
-from Logger import svc_log
+from Logger import svc_log, coords_log
 
 configs = svc_configs()
 default_settings  = configs["default"]["settings"]
@@ -310,6 +310,8 @@ class BodyLandmarkPosition:
 # - BodyPositionV2: Alternative version of the BodyPosition class with potential enhancements.
 
 class BrainPosition(BodyLandmarkPosition):
+    organ_name = "brain"
+
     def __init__(self, landmarks, mp_pose, cv2, image):
         super().__init__(landmarks, mp_pose, cv2, image)
 
@@ -321,7 +323,7 @@ class BrainPosition(BodyLandmarkPosition):
         nose = self.get_landmark('NOSE')
         pair_ear = self.landmark_pair('LEFT_EAR', 'RIGHT_EAR')  
         if pair_ear is None or nose is None:
-            return None 
+            return None
         
         center_ear = self.center(pair_ear)
         
@@ -336,9 +338,14 @@ class BrainPosition(BodyLandmarkPosition):
         
         common_position = self.calculate_organ_position(center1=center_ear, center2=nose, x_offset=offset_common["x_offset"], y_offset=offset_common["y_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
         unity_position = self.calculate_unity_coordinates(center=center_ear, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
-        return common_position, unity_position
+        
+        coords_log(topic="UNITY_COORD", message="unity coordinated for " + self.organ_name, organ=self.organ_name, coords=unity_position)
+
+        return (common_position, unity_position)
     
 class HeartPosition(BodyLandmarkPosition):
+    organ_name = "heart"
+
     def __init__(self, landmarks, mp_pose, cv2, image):
         super().__init__(landmarks, mp_pose, cv2, image)
 
@@ -366,9 +373,14 @@ class HeartPosition(BodyLandmarkPosition):
         
         common_position =  self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=offset_common["x_offset"], y_offset=offset_common["y_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
         unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
-        return common_position, unity_position
+    
+        coords_log(topic="UNITY_COORD", message="unity coordinated for " + self.organ_name, organ=self.organ_name, coords=unity_position)
+
+        return (common_position, unity_position)
 
 class LungsPosition(BodyLandmarkPosition):
+    organ_name = "lungs"
+
     def __init__(self, landmarks, mp_pose, cv2, image):
         super().__init__(landmarks, mp_pose, cv2, image)
 
@@ -396,9 +408,14 @@ class LungsPosition(BodyLandmarkPosition):
         
         common_position =  self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=offset_common["x_offset"], y_offset=offset_common["y_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
         unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
-        return common_position, unity_position
+        
+        coords_log(topic="UNITY_COORD", message="unity coordinated for " + self.organ_name, organ=self.organ_name, coords=unity_position)
+        
+        return (common_position, unity_position)
     
 class KidneyPosition(BodyLandmarkPosition):
+    organ_name = "kidney"
+
     def __init__(self, landmarks, mp_pose, cv2, image):
         super().__init__(landmarks, mp_pose, cv2, image)
 
@@ -426,8 +443,13 @@ class KidneyPosition(BodyLandmarkPosition):
         
         common_position =  self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=offset_common["x_offset"], y_offset=offset_common["y_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
         unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
-        return common_position, unity_position
+        
+        coords_log(topic="UNITY_COORD", message="unity coordinated for " + self.organ_name, organ=self.organ_name, coords=unity_position)
+
+        return (common_position, unity_position)
 class LiverPosition(BodyLandmarkPosition):
+    organ_name = "liver"
+
     def __init__(self, landmarks, mp_pose, cv2, image):
         super().__init__(landmarks, mp_pose, cv2, image)
 
@@ -455,9 +477,14 @@ class LiverPosition(BodyLandmarkPosition):
         
         common_position = self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=offset_common["x_offset"], y_offset=offset_common["y_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
         unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
-        return common_position, unity_position
+        
+        coords_log(topic="UNITY_COORD", message="unity coordinated for " + self.organ_name, organ=self.organ_name, coords=unity_position)
+        
+        return (common_position, unity_position)
     
 class StomachPosition(BodyLandmarkPosition):
+    organ_name = "stomach"
+
     def __init__(self, landmarks, mp_pose, cv2, image):
         super().__init__(landmarks, mp_pose, cv2, image)
 
@@ -485,9 +512,14 @@ class StomachPosition(BodyLandmarkPosition):
         
         common_position = self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=offset_common["x_offset"], y_offset=offset_common["y_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
         unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
-        return common_position, unity_position
+        
+        coords_log(topic="UNITY_COORD", message="unity coordinated for " + self.organ_name, organ=self.organ_name, coords=unity_position)
+        
+        return (common_position, unity_position)
 
 class IntestinePosition(BodyLandmarkPosition):
+    organ_name = "intestine"
+
     def __init__(self, landmarks, mp_pose, cv2, image):
         super().__init__(landmarks, mp_pose, cv2, image)
 
@@ -515,7 +547,10 @@ class IntestinePosition(BodyLandmarkPosition):
         
         common_position = self.calculate_organ_position(center1=center_shoulder, center2=center_hip, x_offset=offset_common["x_offset"], y_offset=offset_common["y_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
         unity_position = self.calculate_unity_coordinates(center=center_shoulder, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
-        return common_position, unity_position
+        
+        coords_log(topic="UNITY_COORD", message="unity coordinated for " + self.organ_name, organ=self.organ_name, coords=unity_position)
+        
+        return (common_position, unity_position)
 
 
 # Calculate all body landmark  
@@ -544,7 +579,7 @@ class BodyPosition(BodyLandmarkPosition):
         selected_indices  = default_settings["selected_marks"]["body"]
         selected_landmarks  = [all_unity_position[i] for i in selected_indices]
 
-        return None, selected_landmarks
+        return (None, selected_landmarks)
 
 # Only Calculate the selected body landmark
 class BodyPositionV2(BodyLandmarkPosition):
@@ -577,7 +612,7 @@ class BodyPositionV2(BodyLandmarkPosition):
                     position_dict = self.calculate_unity_coordinates(landmark, x_offset=offset_unity["x_offset"], y_offset=offset_unity["y_offset"], z_offset=offset_unity["z_offset"], offset_calibration=offset_calibration, estimate_distance=estimate_distance)
                     selected_position.append(position_dict)
         
-        return None, selected_position
+        return (None, selected_position)
 
 def calculate_position(oType, args):
         try:

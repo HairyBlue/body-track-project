@@ -4,7 +4,7 @@ import mediapipe as mp
 import json
 import asyncio
 import time
-import math
+import sys
 import traceback
 
 from BodyLandmarkPosition import calculate_position
@@ -126,17 +126,17 @@ def process_frame(frame, trackType):
     landmarks = pose_results.pose_landmarks
 
     # mp_hands
-    hands_results = hands.process(image)
-    hands_marks = hands_results.multi_hand_landmarks
-    handness = hands_results.multi_handedness
+    # hands_results = hands.process(image)
+    # hands_marks = hands_results.multi_hand_landmarks
+    # handness = hands_results.multi_handedness
 
-    if landmarks or hands_marks:
+    if landmarks:
         image.flags.writeable = True
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
-        if hands_marks:
-            for hand_landmarks in hands_marks:
-                mp_drawing.draw_landmarks(image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+        # if hands_marks:
+        #     for hand_landmarks in hands_marks:
+        #         mp_drawing.draw_landmarks(image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
 
         if landmarks:
             args = {
@@ -146,16 +146,16 @@ def process_frame(frame, trackType):
                 'image': image
             }
 
-            args2 = {
-                'landmarks': hands_marks,
-                'handness': handness,
-                'mp_hands': mp_hands,
-                'cv2': cv2,
-                'image': image
-            }
+            # args2 = {
+            #     'landmarks': hands_marks,
+            #     'handness': handness,
+            #     'mp_hands': mp_hands,
+            #     'cv2': cv2,
+            #     'image': image
+            # }
 
             mp_drawing.draw_landmarks(image, landmarks, mp_pose.POSE_CONNECTIONS)
-            results =  calculate_position(trackType, args)
+            results = calculate_position(trackType, args)
 
             # if startQuiz:
             #     start_quiz_func(args, args2, trackType, results, currentUser, send_user_message, writer)
@@ -201,6 +201,7 @@ async def receive_frame(reader):
         length_prefix = await reader.readexactly(4)
 
         if not length_prefix:
+        
             return None
         
         frame_length = int.from_bytes(length_prefix, byteorder='little')
@@ -317,7 +318,7 @@ async def handle_client(reader, writer):
     loop = asyncio.get_running_loop()
     position_rotation = None
     cachedFrame = None
-    not_empty_mult_host = False
+    not_multiple_client = False
 
     try:
         while True:
@@ -329,88 +330,97 @@ async def handle_client(reader, writer):
 
             jsonMsg = await receive_json(reader)
             frame = await receive_frame(reader)
-
+            
             if jsonMsg:
                 userUUID = jsonMsg.get('uuid', None)
                 userRole = jsonMsg.get('role', None)
                 msg_text = jsonMsg.get('message', None)
                 position = jsonMsg.get('position', None)
                 rotation = jsonMsg.get('rotation', None)
+
                
+                # await register_user(userUUID, userRole, addr, writer)
+
                 if msg_text == "PING":
                     # if userUUID and userRole and msg_text:
                     await register_user(userUUID, userRole, addr, writer)
                     # # No Need to send back PONG
                     # pong_msg = { 'message' : "PONG"}
                     # await send_json_message(userUUID, pong_msg)
+                else:
+                    typeSelected = msg_text
 
+               
             # remove user that no longer active... kung sa DULA pah AFK nah. inang dayug easy farm.
             await remove_staled_user()       
             
             # count if how many host in the clients list... kay mabuang ang ning server kung duha
-            count_host = sum(1 for client in clients if clients[client]['role'] == "Host")
-            if count_host > 1:
-                not_empty_mult_host = True
+            count_client = len(clients)
             
-            # Notify all hosts about the issue of multiple hosts connection.... para nice feature kunuhay
-            if not_empty_mult_host: 
+            if count_client > 1:
+                not_multiple_client = True
+            
+            # # Notify all hosts about the issue of multiple hosts connection.... para nice feature kunuhay
+            if not_multiple_client: 
                 for client in clients:
-                    if clients[client]['role'] == "Host":
-                        duplicate_host_msg = { 'uuid': client, 'message': "There are multiple hosts. Only one is allowed." }
-                        await send_json_message(client, duplicate_host_msg)
+                    # if clients[client]['role'] == "Host":
+                    duplicate_host_msg = { 'uuid': client, 'message': "There are multiple user registered. Only one is allowed." }
+                    await send_json_message(client, duplicate_host_msg)
                 
 
-            if count_host == 1:
-                if not_empty_mult_host:
+            if count_client == 1:
+                if not_multiple_client:
                     for client in clients:
                         duplicate_host_msg = { 'uuid': client, 'message': "" }
                         await send_json_message(client, duplicate_host_msg)
 
-                    not_empty_mult_host = False
-
+                    not_multiple_client = False
+           
                 if frame is not None:
                     cachedFrame = frame
-                    host_client = next(client for client in clients if clients[client]['role'] == "Host")
-                
-                    adjustedFrame = frame
-                    if msg_text is not None:
-                        typeSelected = msg_text
+                    # host_client = next(client for client in clients if clients[client]['role'] == "Host")
+
+                if cachedFrame is not None:
+                    first_client = next(iter(clients))
+                    adjustedFrame = cachedFrame
 
                     if default_settings["adjust_orientation"]:
                         adjustedFrame = adjust_orientation(frame=cachedFrame)
                     if default_settings["override_type_selected"]:
                         typeSelected = default_settings["debug_organ"]
-
+                    
                     if typeSelected and isinstance(track_supported, list) and typeSelected in track_supported:
                         results, image = await loop.run_in_executor(None, process_frame, adjustedFrame, typeSelected.lower())
                         
                         if results:
                             if isinstance(results, str) and results == default_settings["err_distance"]:
-                                error_message = { 'uuid': host_client, 'message': "Adjust your distance from the camera." }
-                                await send_json_message(host_client, error_message)
+                                error_message = { 'uuid': first_client, 'message': "Adjust your distance from the camera." }
+                                await send_json_message(first_client, error_message)
                             else:
-                                common_position, unity_position = results
-                                await send_unity_position(host_client, unity_position)
+                                if (isinstance(results, tuple)):
+                                    common_position, unity_position = results
+                                    
+                                    await send_unity_position(first_client, unity_position)
 
                         if is_cv2_show:
                             if image is not None:
                                 cv2.imshow(addr[0], image)
                                 cv2.waitKey(1)
 
-                    if position and rotation:
-                        position_rotation = {
-                            "positionX": position['x'],
-                            "positionY": position['y'],
-                            "positionZ": position['z'],
-                            "rotationX": rotation['x'],
-                            "rotationY": rotation['y'],
-                            "rotationZ": rotation['z']
-                        }
+                    # if position and rotation:
+                    #     position_rotation = {
+                    #         "positionX": position['x'],
+                    #         "positionY": position['y'],
+                    #         "positionZ": position['z'],
+                    #         "rotationX": rotation['x'],
+                    #         "rotationY": rotation['y'],
+                    #         "rotationZ": rotation['z']
+                    #     }
 
-                    if position_rotation:
-                        for client in clients:
-                            if clients[client]['role'] == "Guest" and position_rotation:
-                                await send_json_message(client, position_rotation)
+                    # if position_rotation:
+                    #     for client in clients:
+                    #         if clients[client]['role'] == "Guest" and position_rotation:
+                    #             await send_json_message(client, position_rotation)
 
             await asyncio.sleep(0.03)
     except Exception as e:
@@ -438,7 +448,7 @@ async def cb(reader, writer):
 # It logs the server start time and port, then enters a loop to continuously serve incoming client connections.
 async def unity_stream():
     host = '0.0.0.0'
-    port = 10000 #5000
+    port = sys.argv[1] if len(sys.argv) > 1 else 5000
 
     server = await asyncio.start_server(cb, host, port)
     current_time_gmt = datetime.now(timezone.utc)
